@@ -1,4 +1,5 @@
 packages:
-  - 'web'
-  - 'server'
-  - 'shared'
+  - "web"
+  - "server"
+  - "shared"
+  - "client"
