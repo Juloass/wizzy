@@ -1,5 +1,9 @@
 {
-	"devDependencies": {
-		"typescript": "^5.8.3"
-	}
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  },
+  "scripts": {
+    "generate": "pnpm --filter @wizzy/shared exec prisma generate",
+    "build:shared": "pnpm --filter @wizzy/shared run build"
+  }
 }
