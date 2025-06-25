@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  twitchId       String   @unique
+  displayName    String
+  createdAt      DateTime @default(now())
+  quizzes        Quiz[]
+}
+
+model Quiz {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  owner       User     @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  questions   Question[]
+
+  QuizResult QuizResult[]
+}
+
+model Question {
+  id             String   @id @default(cuid())
+  quiz           Quiz     @relation(fields: [quizId], references: [id])
+  quizId         String
+  text           String
+  audioPromptKey String? // Clé/ID d’audio dans IndexedDB (ex: hash ou UUID)
+  audioRevealKey String? // Clé de l’audio de reveal (optionnel)
+  choices        Choice[]
+  correctChoice  Int      // index dans `choices`
+  order          Int
+
+  Answer Answer[]
+}
+
+model Choice {
+  id         String   @id @default(cuid())
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String
+  text       String
+  index      Int // index dans la question
+}
+
+model Viewer {
+  id          String         @id @default(cuid())
+  twitchUserId String        @unique // opaque_user_id
+  displayName String?
+  participations QuizResult[]
+  createdAt   DateTime       @default(now())
+}
+
+model QuizResult {
+  id        String        @id @default(cuid())
+  quiz      Quiz          @relation(fields: [quizId], references: [id])
+  quizId    String
+  viewer    Viewer        @relation(fields: [viewerId], references: [id])
+  viewerId  String
+  score     Int           @default(0)
+  answers   Answer[]      // réponses individuelles
+  createdAt DateTime      @default(now())
+}
+
+model Answer {
+  id          String     @id @default(cuid())
+  question    Question   @relation(fields: [questionId], references: [id])
+  questionId  String
+  result      QuizResult @relation(fields: [resultId], references: [id])
+  resultId    String
+  selectedIdx Int        // index du choix sélectionné par le viewer
+  isCorrect   Boolean
+}
+
