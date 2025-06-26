@@ -72,6 +72,8 @@ function handleStreamer(
 ) {
   const userId = socket.data.userId as string;
 
+  lobbyManager.handleHostReconnect(userId, socket.id);
+
   socket.on(
     "create_lobby",
     async (payload: CreateLobbyPayload) => {
@@ -137,7 +139,7 @@ function handleStreamer(
   });
 
   socket.on("disconnect", () => {
-    lobbyManager.removeLobbiesByHost(userId);
+    lobbyManager.handleHostDisconnect(io, userId);
   });
 }
 
@@ -191,7 +193,9 @@ function broadcastQuestionResults(
     stats: Array.from(result.stats.entries()),
     scoreboard: result.scoreboard,
   };
-  io.to(lobby.hostSocketId).emit("question_recap", recapMsg);
+  if (lobby.hostSocketId) {
+    io.to(lobby.hostSocketId).emit("question_recap", recapMsg);
+  }
 
   for (const viewer of lobby.viewers.values()) {
     const rank =
