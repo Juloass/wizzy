@@ -58,6 +58,10 @@ export type SocketEventDefinition = {
     direction: "server->viewer";
     payload: LobbyJoinedPayload;
   };
+  lobby_full: {
+    direction: "server->viewer";
+    payload: LobbyFullPayload;
+  };
   start_question: {
     direction: "web->server";
     payload: StartQuestionPayload;
@@ -128,6 +132,9 @@ export interface JoinLobbyPayload {
   lobbyId: string;
 }
 export interface LobbyJoinedPayload {
+  lobbyId: string;
+}
+export interface LobbyFullPayload {
   lobbyId: string;
 }
 

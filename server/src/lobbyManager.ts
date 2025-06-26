@@ -95,14 +95,18 @@ class LobbyManager {
     this.lobbies.delete(id);
   }
 
-  joinLobby(lobbyId: string, viewer: ViewerInLobby) {
+  joinLobby(lobbyId: string, viewer: ViewerInLobby): boolean {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby) throw new Error("Lobby not found");
+    if (lobby.viewers.size >= lobby.config.maxPlayers) {
+      return false;
+    }
     lobby.viewers.set(viewer.id, viewer);
     lobby.participants.set(viewer.id, viewer);
     if (!lobby.scores.has(viewer.id)) {
       lobby.scores.set(viewer.id, 0);
     }
+    return true;
   }
 
   removeViewer(lobbyId: string, viewerId: string) {
