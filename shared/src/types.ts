@@ -10,7 +10,8 @@ export type SocketDirection =
   | "server->web";
 
 // Mapping de chaque type d'événement à son payload et sa direction
-type SocketEventDefinition = {
+export type SocketEventDefinition = {
+  // --- Flux génériques existants ---
   join: {
     direction: "server->web";
     payload: { player: Viewer };
@@ -38,6 +39,64 @@ type SocketEventDefinition = {
   end: {
     direction: "server->viewer";
     payload: undefined;
+  };
+
+  // --- Gestion d'un quiz ---
+  create_lobby: {
+    direction: "web->server";
+    payload: CreateLobbyPayload;
+  };
+  lobby_created: {
+    direction: "server->web";
+    payload: LobbyCreatedPayload;
+  };
+  join_lobby: {
+    direction: "viewer->server";
+    payload: JoinLobbyPayload;
+  };
+  lobby_joined: {
+    direction: "server->viewer";
+    payload: LobbyJoinedPayload;
+  };
+  start_question: {
+    direction: "web->server";
+    payload: StartQuestionPayload;
+  };
+  question_started: {
+    direction: "server->viewer";
+    payload: QuestionStartedPayload;
+  };
+  submit_answer: {
+    direction: "viewer->server";
+    payload: SubmitAnswerPayload;
+  };
+  reveal_answer: {
+    direction: "web->server";
+    payload: StartQuestionPayload;
+  };
+  answer_reveal: {
+    direction: "server->viewer";
+    payload: AnswerRevealPayload;
+  };
+  question_recap: {
+    direction: "server->web";
+    payload: QuestionRecapPayload;
+  };
+  score_update: {
+    direction: "server->viewer";
+    payload: ScoreUpdatePayload;
+  };
+  end_quiz: {
+    direction: "web->server";
+    payload: EndQuizPayload;
+  };
+  quiz_ended: {
+    direction: "server->viewer";
+    payload: QuizEndedPayload;
+  };
+  error: {
+    direction: "server->viewer" | "server->web";
+    payload: ErrorPayload;
   };
 };
 

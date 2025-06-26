@@ -17,9 +17,24 @@ import {
   QuizEndedPayload,
   ErrorPayload,
   ScoreEntry,
+  SocketEventDefinition,
+  SocketDirection,
 } from "@wizzy/shared";
 
-export function initSocket(io: SocketIOServer) {
+type EventsByDirection<D extends SocketDirection> = {
+  [K in keyof SocketEventDefinition as D extends SocketEventDefinition[K]["direction"]
+    ? K
+    : never]: (payload: SocketEventDefinition[K]["payload"]) => void;
+};
+
+type ClientToServerEvents = EventsByDirection<"viewer->server"> &
+  EventsByDirection<"web->server">;
+type ServerToClientEvents = EventsByDirection<"server->viewer"> &
+  EventsByDirection<"server->web">;
+
+export function initSocket(
+  io: SocketIOServer<ClientToServerEvents, ServerToClientEvents>
+) {
   io.use(async (socket, next) => {
     try {
       const role = socket.handshake.auth?.role as string | undefined;
@@ -41,7 +56,7 @@ export function initSocket(io: SocketIOServer) {
     }
   });
 
-  io.on("connection", (socket: Socket) => {
+  io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
     const role = socket.data.role as string;
     if (role === "streamer") {
       handleStreamer(io, socket);
@@ -51,7 +66,10 @@ export function initSocket(io: SocketIOServer) {
   });
 }
 
-function handleStreamer(io: SocketIOServer, socket: Socket) {
+function handleStreamer(
+  io: SocketIOServer<ClientToServerEvents, ServerToClientEvents>,
+  socket: Socket<ClientToServerEvents, ServerToClientEvents>
+) {
   const userId = socket.data.userId as string;
 
   socket.on(
@@ -123,7 +141,10 @@ function handleStreamer(io: SocketIOServer, socket: Socket) {
   });
 }
 
-function handleViewer(io: SocketIOServer, socket: Socket) {
+function handleViewer(
+  io: SocketIOServer<ClientToServerEvents, ServerToClientEvents>,
+  socket: Socket<ClientToServerEvents, ServerToClientEvents>
+) {
   const auth = socket.data.viewerInfo as ViewerInLobby;
 
   socket.on("join_lobby", (payload: JoinLobbyPayload) => {
@@ -153,7 +174,7 @@ function handleViewer(io: SocketIOServer, socket: Socket) {
 }
 
 function broadcastQuestionResults(
-  io: SocketIOServer,
+  io: SocketIOServer<ClientToServerEvents, ServerToClientEvents>,
   lobby: LobbyState,
   result: { correct: number; stats: Map<number, number>; scoreboard: ScoreEntry[] }
 ) {
