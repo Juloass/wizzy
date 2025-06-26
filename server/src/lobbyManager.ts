@@ -42,6 +42,7 @@ class LobbyManager {
         questionDuration: config?.questionDuration ?? DEFAULT_QUESTION_DURATION,
       },
       viewers: new Map(),
+      participants: new Map(),
       scores: new Map(),
       currentQuestion: -1,
       answers: new Map(),
@@ -66,6 +67,7 @@ class LobbyManager {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby) throw new Error("Lobby not found");
     lobby.viewers.set(viewer.id, viewer);
+    lobby.participants.set(viewer.id, viewer);
     if (!lobby.scores.has(viewer.id)) {
       lobby.scores.set(viewer.id, 0);
     }
@@ -148,7 +150,7 @@ class LobbyManager {
 
     const results: QuizEndResult[] = [];
 
-    for (const viewer of lobby.viewers.values()) {
+    for (const viewer of lobby.participants.values()) {
       const viewerRecord = await prisma.viewer.upsert({
         where: { twitchUserId: viewer.id },
         update: { displayName: viewer.displayName },
