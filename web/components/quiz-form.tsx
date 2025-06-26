@@ -28,12 +28,18 @@ interface Question {
   audioPromptKey?: string | null
   audioRevealKey?: string | null
   order: number
+  audioEnabled?: boolean
 }
 
 export default function QuizForm({ quiz }: { quiz: any }) {
   const [name, setName] = useState(quiz.name || '')
   const [description, setDescription] = useState(quiz.description || '')
-  const [questions, setQuestions] = useState<Question[]>(quiz.questions || [])
+  const [questions, setQuestions] = useState<Question[]>(
+    (quiz.questions || []).map((q: any) => ({
+      ...q,
+      audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
+    }))
+  )
   const [errors, setErrors] = useState<string[]>([])
   const [tab, setTab] = useState<string>(quiz.questions?.[0]?.id || 'add')
 
@@ -46,6 +52,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
         text: '',
         choices: [],
         correctChoice: 0,
+        audioEnabled: false,
         order: questions.length,
       },
     ])
@@ -91,6 +98,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     const copy = [...questions]
     if (type === 'prompt') copy[idx].audioPromptKey = key
     else copy[idx].audioRevealKey = key
+    copy[idx].audioEnabled = true
     setQuestions(copy)
   }
 
@@ -100,6 +108,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
       copy[idx].audioPromptKey = null
       copy[idx].audioRevealKey = null
     }
+    copy[idx].audioEnabled = enabled
     setQuestions(copy)
   }
 
@@ -133,13 +142,33 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     const data = await importQuiz(text)
     setName(data.name)
     setDescription(data.description || '')
-    setQuestions(data.questions)
+    setQuestions(
+      data.questions.map((q: any) => ({
+        ...q,
+        audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
+      }))
+    )
     setTab(data.questions?.[0]?.id || 'add')
   }
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (!validate()) return
-    console.log('submit', { name, description, questions })
+    const payload = {
+      name,
+      description,
+      questions: questions.map(({ audioEnabled, ...q }) => q),
+    }
+    const res = await fetch(quiz.id ? `/api/quiz/${quiz.id}` : '/api/quiz', {
+      method: quiz.id ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (res.ok) {
+      window.location.href = '/dashboard'
+    } else {
+      const msg = await res.text()
+      setErrors([msg || 'Failed to save'])
+    }
   }
 
   return (
@@ -157,7 +186,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
             </TabsList>
 
             {questions.map((q, idx) => {
-              const audioEnabled = Boolean(q.audioPromptKey || q.audioRevealKey)
+              const audioEnabled = q.audioEnabled ?? Boolean(q.audioPromptKey || q.audioRevealKey)
               return (
                 <TabsContent key={q.id} value={q.id} className="space-y-4">
                   <Card>
