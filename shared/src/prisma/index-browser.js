@@ -124,6 +124,11 @@ exports.Prisma.UserScalarFieldEnum = {
   id: 'id',
   twitchId: 'twitchId',
   displayName: 'displayName',
+  profileImageUrl: 'profileImageUrl',
+  email: 'email',
+  accessToken: 'accessToken',
+  refreshToken: 'refreshToken',
+  tokenExpiry: 'tokenExpiry',
   createdAt: 'createdAt'
 };
 

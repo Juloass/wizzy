@@ -15,11 +15,16 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  twitchId    String   @unique
-  displayName String
-  createdAt   DateTime @default(now())
-  quizzes     Quiz[]
+  id              String    @id @default(cuid())
+  twitchId        String    @unique
+  displayName     String
+  profileImageUrl String?
+  email           String?
+  accessToken     String?
+  refreshToken    String?
+  tokenExpiry     DateTime?
+  createdAt       DateTime  @default(now())
+  quizzes         Quiz[]
 }
 
 model Quiz {

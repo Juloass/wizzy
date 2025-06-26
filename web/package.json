@@ -3,10 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:generate": "pnpm dlx prisma generate --schema=../shared/prisma/schema.prisma",
+    "prisma:studio": "pnpm dlx prisma studio --schema=../shared/prisma/schema.prisma",
+    "prisma:migrate": "pnpm dlx prisma migrate dev --schema=../shared/prisma/schema.prisma",
+    "prisma:push": "pnpm dlx prisma db push --schema=../shared/prisma/schema.prisma",
+    "prisma:format": "pnpm dlx prisma format --schema=../shared/prisma/schema.prisma",
+    "db:init": "pnpm prisma:push && pnpm prisma:generate"
   },
   "dependencies": {
     "@wizzy/shared": "workspace:*",
