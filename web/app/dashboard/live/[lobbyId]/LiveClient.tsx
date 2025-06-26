@@ -1,15 +1,28 @@
 'use client';
 import { useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
+import { io, type Socket } from "socket.io-client";
 import type {
   AnswerRevealPayload,
   QuestionRecapPayload,
   QuestionStartedPayload,
   QuizEndedPayload,
   ScoreEntry,
+  SocketEventDefinition,
+  SocketDirection,
 } from "@wizzy/shared";
 import { DEFAULT_QUESTION_DURATION } from "@wizzy/shared";
 import { Button } from "@/components/ui/button";
+
+type EventsByDirection<D extends SocketDirection> = {
+  [K in keyof SocketEventDefinition as D extends SocketEventDefinition[K]["direction"]
+    ? K
+    : never]: (payload: SocketEventDefinition[K]["payload"]) => void;
+};
+
+type ServerToClientEvents = EventsByDirection<"server->viewer"> &
+  EventsByDirection<"server->web">;
+type ClientToServerEvents = EventsByDirection<"viewer->server"> &
+  EventsByDirection<"web->server">;
 
 interface Props {
   lobbyId: string;
@@ -22,7 +35,7 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
   const [scoreboard, setScoreboard] = useState<ScoreEntry[]>([]);
   const [remaining, setRemaining] = useState(0);
   const duration = useRef(DEFAULT_QUESTION_DURATION);
-  const socketRef = useRef<ReturnType<typeof io>>();
+  const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents>>();
 
   // handle countdown
   useEffect(() => {
@@ -34,10 +47,13 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
   }, [remaining]);
 
   useEffect(() => {
-    const socket = io("/", {
-      autoConnect: false,
-      auth: { role: "streamer", accessToken },
-    });
+    const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
+      "/",
+      {
+        autoConnect: false,
+        auth: { role: "streamer", accessToken },
+      }
+    );
     socketRef.current = socket;
     socket.connect();
 
