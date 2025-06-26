@@ -1,5 +1,6 @@
 import { prisma } from "./lib/prisma";
-import { DEFAULT_MAX_PLAYERS, DEFAULT_QUESTION_DURATION } from "@wizzy/shared";
+import { DEFAULT_MAX_PLAYERS, DEFAULT_QUESTION_DURATION, QuizEndedPayload } from "@wizzy/shared";
+import { Server as SocketIOServer } from "socket.io";
 import {
   LobbyConfig,
   LobbyState,
@@ -178,6 +179,37 @@ class LobbyManager {
 
     this.lobbies.delete(lobbyId);
     return results;
+  }
+
+  handleHostDisconnect(
+    io: SocketIOServer,
+    hostId: string
+  ) {
+    for (const lobby of this.lobbies.values()) {
+      if (lobby.hostId === hostId) {
+        lobby.hostSocketId = undefined;
+        if (lobby.reconnectTimer) {
+          clearTimeout(lobby.reconnectTimer);
+        }
+        lobby.reconnectTimer = setTimeout(async () => {
+          const results = await this.endQuiz(lobby.id);
+          const msg: QuizEndedPayload = { results };
+          io.to(lobby.id).emit("quiz_ended", msg);
+        }, 60 * 60 * 1000); // 1 hour
+      }
+    }
+  }
+
+  handleHostReconnect(hostId: string, socketId: string) {
+    for (const lobby of this.lobbies.values()) {
+      if (lobby.hostId === hostId) {
+        lobby.hostSocketId = socketId;
+        if (lobby.reconnectTimer) {
+          clearTimeout(lobby.reconnectTimer);
+          lobby.reconnectTimer = undefined;
+        }
+      }
+    }
   }
 
   removeLobbiesByHost(hostId: string) {
