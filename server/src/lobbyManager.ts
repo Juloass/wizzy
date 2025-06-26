@@ -126,6 +126,7 @@ class LobbyManager {
     const q = lobby.quiz.questions[lobby.currentQuestion];
     if (!q) throw new Error("No more questions");
     lobby.answers.set(q.id, new Map());
+    lobby.questionStartedAt = Date.now();
     return q;
   }
 
@@ -162,6 +163,7 @@ class LobbyManager {
       clearTimeout(lobby.questionTimer);
       lobby.questionTimer = undefined;
     }
+    lobby.questionStartedAt = undefined;
 
     const scoreboard = Array.from(lobby.scores.entries())
       .map(([viewerId, score]) => ({ viewerId, score }))

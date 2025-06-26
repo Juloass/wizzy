@@ -139,6 +139,7 @@ export interface QuestionStartedPayload {
   text: string;
   choices: { index: number; text: string }[];
   audioPromptKey?: string | null;
+  remaining?: number;
 }
 
 export interface SubmitAnswerPayload {
