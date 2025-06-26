@@ -153,6 +153,22 @@ function handleViewer(
       socket.join(payload.lobbyId);
       const msg: LobbyJoinedPayload = { lobbyId: payload.lobbyId };
       socket.emit("lobby_joined", msg);
+
+      const lobby = lobbyManager.getLobby(payload.lobbyId);
+      if (lobby && lobby.currentQuestion >= 0 && lobby.questionStartedAt) {
+        const q = lobby.quiz.questions[lobby.currentQuestion];
+        const endsAt =
+          lobby.questionStartedAt + lobby.config.questionDuration * 1000;
+        const remaining = Math.max(0, (endsAt - Date.now()) / 1000);
+        const qMsg: QuestionStartedPayload = {
+          id: q.id,
+          text: q.text,
+          choices: q.choices.map((c) => ({ index: c.index, text: c.text })),
+          audioPromptKey: q.audioPromptKey,
+          remaining,
+        };
+        socket.emit("question_started", qMsg);
+      }
     } catch (err) {
       const errMsg: ErrorPayload = { message: (err as Error).message };
       socket.emit("error", errMsg);

@@ -31,6 +31,7 @@ export interface LobbyState {
   currentQuestion: number;
   answers: Map<string, Map<string, number>>;
   questionTimer?: NodeJS.Timeout;
+  questionStartedAt?: number;
 }
 
 export interface QuizEndResult {
