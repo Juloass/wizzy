@@ -1,9 +1,17 @@
 'use client'
+
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
+import { FileDrop } from '@/components/ui/file-drop'
 import { exportQuiz, importQuiz } from '@/lib/quizIO'
 import { storeAudioBlob } from '@/lib/audio'
 
@@ -27,18 +35,21 @@ export default function QuizForm({ quiz }: { quiz: any }) {
   const [description, setDescription] = useState(quiz.description || '')
   const [questions, setQuestions] = useState<Question[]>(quiz.questions || [])
   const [errors, setErrors] = useState<string[]>([])
+  const [tab, setTab] = useState<string>(quiz.questions?.[0]?.id || 'add')
 
   const handleAddQuestion = () => {
+    const id = crypto.randomUUID()
     setQuestions([
       ...questions,
       {
-        id: crypto.randomUUID(),
+        id,
         text: '',
         choices: [],
         correctChoice: 0,
         order: questions.length,
       },
     ])
+    setTab(id)
   }
 
   const addChoice = (qIdx: number) => {
@@ -83,13 +94,22 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     setQuestions(copy)
   }
 
+  const toggleAudio = (idx: number, enabled: boolean) => {
+    const copy = [...questions]
+    if (!enabled) {
+      copy[idx].audioPromptKey = null
+      copy[idx].audioRevealKey = null
+    }
+    setQuestions(copy)
+  }
+
   const validate = () => {
     const errs: string[] = []
     if (!name.trim()) errs.push('Quiz name required')
     if (questions.length === 0) errs.push('At least one question')
     questions.forEach((q, i) => {
       if (q.choices.length < 2 || q.choices.length > 4) {
-        errs.push(`Question ${i + 1} must have 2-4 choices`)
+        errs.push(`Question ${i + 1} must have 2–4 choices`)
       }
     })
     setErrors(errs)
@@ -114,100 +134,155 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     setName(data.name)
     setDescription(data.description || '')
     setQuestions(data.questions)
+    setTab(data.questions?.[0]?.id || 'add')
   }
 
   const onSubmit = () => {
     if (!validate()) return
-    // TODO: submit to backend
     console.log('submit', { name, description, questions })
   }
 
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="edit">
-        <TabsList>
-          <TabsTrigger value="edit">Edit Quiz</TabsTrigger>
-          <TabsTrigger value="import">Import/Export</TabsTrigger>
-        </TabsList>
-        <TabsContent value="edit" className="space-y-4">
+      <div className="flex flex-col gap-6 lg:flex-row">
+        <div className="flex-1">
+          <Tabs value={tab} onValueChange={setTab} className="space-y-4">
+            <TabsList className="mb-4">
+              {questions.map((q, idx) => (
+                <TabsTrigger key={q.id} value={q.id}>
+                  {idx + 1}
+                </TabsTrigger>
+              ))}
+              <TabsTrigger value="add">+ Question</TabsTrigger>
+            </TabsList>
+
+            {questions.map((q, idx) => {
+              const audioEnabled = Boolean(q.audioPromptKey || q.audioRevealKey)
+              return (
+                <TabsContent key={q.id} value={q.id} className="space-y-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Question {idx + 1}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <Input
+                        value={q.text}
+                        onChange={(e) => updateQuestionText(idx, e.target.value)}
+                        placeholder="Question text"
+                      />
+                      {q.choices.map((c, cIdx) => (
+                        <div key={c.id} className="flex items-center gap-2">
+                          <Input
+                            value={c.text}
+                            onChange={(e) =>
+                              updateChoice(idx, cIdx, e.target.value)
+                            }
+                            placeholder={`Choice ${cIdx + 1}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => removeChoice(idx, cIdx)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        onClick={() => addChoice(idx)}
+                        disabled={q.choices.length >= 4}
+                      >
+                        Add Choice
+                      </Button>
+
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={audioEnabled}
+                          onCheckedChange={(v) => toggleAudio(idx, v)}
+                        />
+                        <span className="text-sm">Add sound</span>
+                      </div>
+
+                      {audioEnabled && (
+                        <div className="flex flex-col gap-2">
+                          <FileDrop
+                            accept="audio/*"
+                            label="Question song"
+                            onFile={(f) => handleAudio(idx, 'prompt', f)}
+                          />
+                          <FileDrop
+                            accept="audio/*"
+                            label="Reveal song"
+                            onFile={(f) => handleAudio(idx, 'reveal', f)}
+                          />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )
+            })}
+
+            <TabsContent value="add">
+              <Button type="button" onClick={handleAddQuestion}>
+                Add Question
+              </Button>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <div className="flex flex-col gap-4 lg:w-1/3">
           <Card>
             <CardHeader>
               <CardTitle>Quiz Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Quiz name" />
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Quiz name"
+              />
               <textarea
-                className="border rounded-md w-full p-2"
+                className="w-full rounded-md border p-2"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Description"
               />
             </CardContent>
           </Card>
-          {questions.map((q, idx) => (
-            <Card key={q.id} className="space-y-2">
-              <CardHeader>
-                <CardTitle>Question {idx + 1}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Input
-                  value={q.text}
-                  onChange={(e) => updateQuestionText(idx, e.target.value)}
-                  placeholder="Question text"
-                />
-                {q.choices.map((c, cIdx) => (
-                  <div key={c.id} className="flex items-center gap-2">
-                    <Input
-                      value={c.text}
-                      onChange={(e) => updateChoice(idx, cIdx, e.target.value)}
-                      placeholder={`Choice ${cIdx + 1}`}
-                    />
-                    <Button type="button" variant="outline" onClick={() => removeChoice(idx, cIdx)}>
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-                <Button type="button" onClick={() => addChoice(idx)} disabled={q.choices.length >= 4}>
-                  Add Choice
-                </Button>
-                <div className="flex flex-col gap-2">
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    onChange={(e) => handleAudio(idx, 'prompt', e.target.files?.[0] || null)}
-                  />
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    onChange={(e) => handleAudio(idx, 'reveal', e.target.files?.[0] || null)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          <Button type="button" onClick={handleAddQuestion}>
-            Add Question
-          </Button>
-          {errors.length > 0 && (
-            <Card className="border-destructive">
-              <CardContent className="text-destructive space-y-1">
-                {errors.map((e) => (
-                  <div key={e}>{e}</div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-          <Button onClick={onSubmit}>Save Quiz</Button>
-        </TabsContent>
-        <TabsContent value="import" className="space-y-4">
-          <div className="flex items-center gap-2">
-            <input type="file" accept="application/json" onChange={(e) => handleImport(e.target.files?.[0] || null)} />
-            <Button type="button" onClick={handleExport}>
-              Export
-            </Button>
-          </div>
-        </TabsContent>
-      </Tabs>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Import / Export</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <input
+                type="file"
+                accept="application/json"
+                onChange={(e) =>
+                  handleImport(e.target.files?.[0] || null)
+                }
+              />
+              <Button type="button" onClick={handleExport}>
+                Export
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {errors.length > 0 && (
+        <Card className="border-destructive">
+          <CardContent className="space-y-1 text-destructive">
+            {errors.map((e) => (
+              <div key={e}>{e}</div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <Button onClick={onSubmit}>Save Quiz</Button>
     </div>
   )
 }
