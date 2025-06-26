@@ -15,6 +15,7 @@ import {
   QuizWithQuestions,
   QuizEndResult,
 } from "./types";
+import { QuizEndedPayload } from "@wizzy/shared";
 import { randomUUID } from "crypto";
 
 class LobbyManager {
