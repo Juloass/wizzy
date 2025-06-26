@@ -62,7 +62,10 @@ describe("socket server", () => {
     const sCreated = new Promise<{ lobbyId: string }>((resolve) =>
       streamer.on("lobby_created", resolve)
     );
-    streamer.emit("create_lobby", { quizId: "quiz1" });
+    streamer.emit("create_lobby", {
+      quizId: "quiz1",
+      config: { questionDuration: 0.05 },
+    });
     const { lobbyId } = await sCreated;
     console.log("✅ Lobby created with ID:", lobbyId);
 
@@ -94,13 +97,16 @@ describe("socket server", () => {
     viewer1.emit("submit_answer", { lobbyId, choiceIndex: 0 });
     viewer2.emit("submit_answer", { lobbyId, choiceIndex: 1 });
 
-    const reveal = new Promise<{ correct: number; stats: [number, number][] }>(
-      (r) => streamer.on("answer_reveal", r)
-    );
-    streamer.emit("reveal_answer", { lobbyId });
-    const stats = await reveal;
-    console.log("✅ Answer revealed", stats);
-    expect(stats.correct).toBe(0);
+    const recap = new Promise<any>((r) => streamer.on("question_recap", r));
+    const score1 = new Promise<any>((r) => viewer1.on("score_update", r));
+    const score2 = new Promise<any>((r) => viewer2.on("score_update", r));
+    const rec = await recap;
+    const sc1 = await score1;
+    const sc2 = await score2;
+    console.log("✅ Recap received", rec);
+    expect(rec.correct).toBe(0);
+    expect(sc1.score).toBe(1);
+    expect(sc2.score).toBe(0);
 
     console.log("🟢 Viewer2 disconnecting");
     viewer2.close();

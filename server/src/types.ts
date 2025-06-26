@@ -17,16 +17,20 @@ export interface ViewerInLobby {
 
 export interface LobbyConfig {
   maxPlayers: number;
+  questionDuration: number;
 }
 
 export interface LobbyState {
   id: string;
   hostId: string;
+  hostSocketId: string;
   quiz: QuizWithQuestions;
   config: LobbyConfig;
   viewers: Map<string, ViewerInLobby>;
+  scores: Map<string, number>;
   currentQuestion: number;
   answers: Map<string, Map<string, number>>;
+  questionTimer?: NodeJS.Timeout;
 }
 
 export interface QuizEndResult {
