@@ -121,8 +121,69 @@ describe("socket server", () => {
     streamer.emit("end_quiz", { lobbyId });
     const res = await ended;
     console.log("✅ Quiz ended with results:", res);
+    // both viewers should have their results saved even if one disconnected
+    expect(res.results.length).toBe(2);
+
+    streamer.close();
+  });
+  it("allows viewer to reconnect", async () => {
+    console.log("🟢 Creating lobby for reconnect");
+    const streamer = Client(`http://localhost:${port}`, {
+      auth: { role: "streamer", accessToken: "s2" },
+    });
+    const sCreated = new Promise<{ lobbyId: string }>((r) =>
+      streamer.on("lobby_created", r)
+    );
+    streamer.emit("create_lobby", {
+      quizId: "quiz1",
+      config: { questionDuration: 0.05 },
+    });
+    const { lobbyId } = await sCreated;
+
+    const viewer1 = Client(`http://localhost:${port}`, {
+      auth: { role: "viewer", token: "vr1" },
+    });
+    await new Promise((r) => {
+      viewer1.on("lobby_joined", r);
+      viewer1.emit("join_lobby", { lobbyId });
+    });
+    expect(lobbyManager.getLobby(lobbyId)?.viewers.size).toBe(1);
+
+    console.log("🟢 Disconnecting viewer");
+    viewer1.close();
+    await new Promise((f) => setTimeout(f, 50));
+    expect(lobbyManager.getLobby(lobbyId)?.viewers.size).toBe(0);
+
+    console.log("🟢 Reconnecting viewer");
+    const viewer1b = Client(`http://localhost:${port}`, {
+      auth: { role: "viewer", token: "vr1" },
+    });
+    await new Promise((r) => {
+      viewer1b.on("lobby_joined", r);
+      viewer1b.emit("join_lobby", { lobbyId });
+    });
+    expect(lobbyManager.getLobby(lobbyId)?.viewers.size).toBe(1);
+
+    const qStarted = new Promise((r) => streamer.on("question_started", r));
+    streamer.emit("start_question", { lobbyId });
+    await qStarted;
+    viewer1b.emit("submit_answer", { lobbyId, choiceIndex: 0 });
+
+    const recap = new Promise<any>((r) => streamer.on("question_recap", r));
+    const score = new Promise<any>((r) => viewer1b.on("score_update", r));
+    const rec = await recap;
+    const sc = await score;
+    expect(rec.correct).toBe(0);
+    expect(sc.score).toBe(1);
+
+    const ended = new Promise<{ results: any[] }>((r) =>
+      streamer.on("quiz_ended", r)
+    );
+    streamer.emit("end_quiz", { lobbyId });
+    const res = await ended;
     expect(res.results.length).toBe(1);
 
     streamer.close();
+    viewer1b.close();
   });
 });
