@@ -1,7 +1,23 @@
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { authenticateStreamer, authenticateViewer } from "./auth";
 import { lobbyManager } from "./lobbyManager";
-import { ViewerInLobby } from "./types";
+import { ViewerInLobby, LobbyState } from "./types";
+import {
+  CreateLobbyPayload,
+  LobbyCreatedPayload,
+  JoinLobbyPayload,
+  LobbyJoinedPayload,
+  StartQuestionPayload,
+  QuestionStartedPayload,
+  SubmitAnswerPayload,
+  AnswerRevealPayload,
+  QuestionRecapPayload,
+  ScoreUpdatePayload,
+  EndQuizPayload,
+  QuizEndedPayload,
+  ErrorPayload,
+  ScoreEntry,
+} from "@wizzy/shared";
 
 export function initSocket(io: SocketIOServer) {
   io.use(async (socket, next) => {
@@ -38,48 +54,67 @@ export function initSocket(io: SocketIOServer) {
 function handleStreamer(io: SocketIOServer, socket: Socket) {
   const userId = socket.data.userId as string;
 
-  socket.on("create_lobby", async (payload: { quizId: string; config?: { maxPlayers?: number } }) => {
+  socket.on(
+    "create_lobby",
+    async (payload: CreateLobbyPayload) => {
     try {
-      const lobby = await lobbyManager.createLobby(userId, payload.quizId, payload.config);
+      const lobby = await lobbyManager.createLobby(
+        userId,
+        socket.id,
+        payload.quizId,
+        payload.config
+      );
       socket.join(lobby.id);
-      socket.emit("lobby_created", { lobbyId: lobby.id });
+      const msg: LobbyCreatedPayload = { lobbyId: lobby.id };
+      socket.emit("lobby_created", msg);
     } catch (err) {
-      socket.emit("error", { message: (err as Error).message });
+      const errMsg: ErrorPayload = { message: (err as Error).message };
+      socket.emit("error", errMsg);
     }
-  });
+  }
+  );
 
-  socket.on("start_question", async (payload: { lobbyId: string }) => {
+  socket.on("start_question", async (payload: StartQuestionPayload) => {
     try {
       const q = lobbyManager.startQuestion(payload.lobbyId);
-      io.to(payload.lobbyId).emit("question_started", {
+      const lobby = lobbyManager.getLobby(payload.lobbyId)!;
+      const qMsg: QuestionStartedPayload = {
         id: q.id,
         text: q.text,
         choices: q.choices.map((c) => ({ index: c.index, text: c.text })),
         audioPromptKey: q.audioPromptKey,
-      });
+      };
+      io.to(payload.lobbyId).emit("question_started", qMsg);
+
+      lobby.questionTimer = setTimeout(() => {
+        const result = lobbyManager.revealAnswer(payload.lobbyId);
+        broadcastQuestionResults(io, lobby, result);
+      }, lobby.config.questionDuration * 1000);
     } catch (err) {
-      socket.emit("error", { message: (err as Error).message });
+      const errMsg: ErrorPayload = { message: (err as Error).message };
+      socket.emit("error", errMsg);
     }
   });
 
-  socket.on("reveal_answer", (payload: { lobbyId: string }) => {
+  socket.on("reveal_answer", (payload: StartQuestionPayload) => {
     try {
+      const lobby = lobbyManager.getLobby(payload.lobbyId)!;
       const result = lobbyManager.revealAnswer(payload.lobbyId);
-      io.to(payload.lobbyId).emit("answer_reveal", {
-        correct: result.correct,
-        stats: Array.from(result.stats.entries()),
-      });
+      broadcastQuestionResults(io, lobby, result);
     } catch (err) {
-      socket.emit("error", { message: (err as Error).message });
+      const errMsg: ErrorPayload = { message: (err as Error).message };
+      socket.emit("error", errMsg);
     }
   });
 
-  socket.on("end_quiz", async (payload: { lobbyId: string }) => {
+  socket.on("end_quiz", async (payload: EndQuizPayload) => {
     try {
       const results = await lobbyManager.endQuiz(payload.lobbyId);
-      io.to(payload.lobbyId).emit("quiz_ended", { results });
+      const msg: QuizEndedPayload = { results };
+      io.to(payload.lobbyId).emit("quiz_ended", msg);
     } catch (err) {
-      socket.emit("error", { message: (err as Error).message });
+      const errMsg: ErrorPayload = { message: (err as Error).message };
+      socket.emit("error", errMsg);
     }
   });
 
@@ -91,25 +126,63 @@ function handleStreamer(io: SocketIOServer, socket: Socket) {
 function handleViewer(io: SocketIOServer, socket: Socket) {
   const auth = socket.data.viewerInfo as ViewerInLobby;
 
-  socket.on("join_lobby", (payload: { lobbyId: string }) => {
+  socket.on("join_lobby", (payload: JoinLobbyPayload) => {
     try {
       lobbyManager.joinLobby(payload.lobbyId, { ...auth, socketId: socket.id });
       socket.join(payload.lobbyId);
-      socket.emit("lobby_joined", { lobbyId: payload.lobbyId });
+      const msg: LobbyJoinedPayload = { lobbyId: payload.lobbyId };
+      socket.emit("lobby_joined", msg);
     } catch (err) {
-      socket.emit("error", { message: (err as Error).message });
+      const errMsg: ErrorPayload = { message: (err as Error).message };
+      socket.emit("error", errMsg);
     }
   });
 
-  socket.on("submit_answer", (payload: { lobbyId: string; choiceIndex: number }) => {
+  socket.on("submit_answer", (payload: SubmitAnswerPayload) => {
     try {
       lobbyManager.submitAnswer(payload.lobbyId, auth.id, payload.choiceIndex);
     } catch (err) {
-      socket.emit("error", { message: (err as Error).message });
+      const errMsg: ErrorPayload = { message: (err as Error).message };
+      socket.emit("error", errMsg);
     }
   });
 
   socket.on("disconnect", () => {
     lobbyManager.removeViewerEverywhere(auth.id);
   });
+}
+
+function broadcastQuestionResults(
+  io: SocketIOServer,
+  lobby: LobbyState,
+  result: { correct: number; stats: Map<number, number>; scoreboard: ScoreEntry[] }
+) {
+  const revealMsg: AnswerRevealPayload = {
+    correct: result.correct,
+    stats: Array.from(result.stats.entries()),
+  };
+  io.to(lobby.id).emit("answer_reveal", revealMsg);
+
+  // send recap to streamer
+  const recapMsg: QuestionRecapPayload = {
+    questionId: lobby.quiz.questions[lobby.currentQuestion].id,
+    correct: result.correct,
+    stats: Array.from(result.stats.entries()),
+    scoreboard: result.scoreboard,
+  };
+  io.to(lobby.hostSocketId).emit("question_recap", recapMsg);
+
+  for (const viewer of lobby.viewers.values()) {
+    const rank =
+      result.scoreboard.findIndex((s) => s.viewerId === viewer.id) + 1;
+    const score = lobby.scores.get(viewer.id) || 0;
+    let top: ScoreEntry[] = [];
+    if (rank <= 3) {
+      top = result.scoreboard.slice(0, 3);
+    } else {
+      top = [result.scoreboard[0], result.scoreboard[1], { viewerId: viewer.id, score }];
+    }
+    const payload: ScoreUpdatePayload = { score, rank, top };
+    io.to(viewer.socketId).emit("score_update", payload);
+  }
 }

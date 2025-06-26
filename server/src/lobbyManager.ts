@@ -1,5 +1,5 @@
 import { prisma } from "./lib/prisma";
-import { DEFAULT_MAX_PLAYERS } from "@wizzy/shared";
+import { DEFAULT_MAX_PLAYERS, DEFAULT_QUESTION_DURATION } from "@wizzy/shared";
 import {
   LobbyConfig,
   LobbyState,
@@ -14,6 +14,7 @@ class LobbyManager {
 
   async createLobby(
     hostId: string,
+    hostSocketId: string,
     quizId: string,
     config?: Partial<LobbyConfig>
   ): Promise<LobbyState> {
@@ -34,9 +35,14 @@ class LobbyManager {
     const lobby: LobbyState = {
       id: lobbyId,
       hostId,
+      hostSocketId,
       quiz: quiz as QuizWithQuestions,
-      config: { maxPlayers: config?.maxPlayers ?? DEFAULT_MAX_PLAYERS },
+      config: {
+        maxPlayers: config?.maxPlayers ?? DEFAULT_MAX_PLAYERS,
+        questionDuration: config?.questionDuration ?? DEFAULT_QUESTION_DURATION,
+      },
       viewers: new Map(),
+      scores: new Map(),
       currentQuestion: -1,
       answers: new Map(),
     };
@@ -49,6 +55,10 @@ class LobbyManager {
   }
 
   removeLobby(id: string) {
+    const lobby = this.lobbies.get(id);
+    if (lobby?.questionTimer) {
+      clearTimeout(lobby.questionTimer);
+    }
     this.lobbies.delete(id);
   }
 
@@ -56,6 +66,9 @@ class LobbyManager {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby) throw new Error("Lobby not found");
     lobby.viewers.set(viewer.id, viewer);
+    if (!lobby.scores.has(viewer.id)) {
+      lobby.scores.set(viewer.id, 0);
+    }
   }
 
   removeViewer(lobbyId: string, viewerId: string) {
@@ -70,6 +83,11 @@ class LobbyManager {
   startQuestion(lobbyId: string) {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby) throw new Error("Lobby not found");
+
+    if (lobby.questionTimer) {
+      clearTimeout(lobby.questionTimer);
+      lobby.questionTimer = undefined;
+    }
 
     lobby.currentQuestion++;
     const q = lobby.quiz.questions[lobby.currentQuestion];
@@ -100,12 +118,33 @@ class LobbyManager {
       stats.set(choiceIdx, (stats.get(choiceIdx) || 0) + 1);
     }
 
-    return { correct: question.correctChoice, stats };
+    for (const [viewerId, choiceIdx] of aMap.entries()) {
+      if (choiceIdx === question.correctChoice) {
+        const prev = lobby.scores.get(viewerId) || 0;
+        lobby.scores.set(viewerId, prev + 1);
+      }
+    }
+
+    if (lobby.questionTimer) {
+      clearTimeout(lobby.questionTimer);
+      lobby.questionTimer = undefined;
+    }
+
+    const scoreboard = Array.from(lobby.scores.entries())
+      .map(([viewerId, score]) => ({ viewerId, score }))
+      .sort((a, b) => b.score - a.score);
+
+    return { correct: question.correctChoice, stats, scoreboard };
   }
 
   async endQuiz(lobbyId: string): Promise<QuizEndResult[]> {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby) throw new Error("Lobby not found");
+
+    if (lobby.questionTimer) {
+      clearTimeout(lobby.questionTimer);
+      lobby.questionTimer = undefined;
+    }
 
     const results: QuizEndResult[] = [];
 
@@ -144,6 +183,9 @@ class LobbyManager {
   removeLobbiesByHost(hostId: string) {
     for (const [id, lobby] of this.lobbies) {
       if (lobby.hostId === hostId) {
+        if (lobby.questionTimer) {
+          clearTimeout(lobby.questionTimer);
+        }
         this.lobbies.delete(id);
       }
     }
