@@ -243,4 +243,41 @@ describe("socket server", () => {
     expect(res.message).toMatch(/maxPlayers/i);
     streamer.close();
   });
+
+  it("rejects join when lobby is full", async () => {
+    const streamer = Client(`http://localhost:${port}`, {
+      auth: { role: "streamer", accessToken: "s1" },
+    });
+    const created = new Promise<{ lobbyId: string }>((r) =>
+      streamer.on("lobby_created", r)
+    );
+    streamer.emit("create_lobby", {
+      quizId: "quiz1",
+      config: { maxPlayers: 1 },
+    });
+    const { lobbyId } = await created;
+
+    const viewer1 = Client(`http://localhost:${port}`, {
+      auth: { role: "viewer", token: "v1" },
+    });
+    await new Promise((r) => {
+      viewer1.on("lobby_joined", r);
+      viewer1.emit("join_lobby", { lobbyId });
+    });
+    expect(lobbyManager.getLobby(lobbyId)?.viewers.size).toBe(1);
+
+    const viewer2 = Client(`http://localhost:${port}`, {
+      auth: { role: "viewer", token: "v2" },
+    });
+    const full = new Promise<{ lobbyId: string }>((r) =>
+      viewer2.on("lobby_full", r)
+    );
+    viewer2.emit("join_lobby", { lobbyId });
+    const fullMsg = await full;
+    expect(fullMsg.lobbyId).toBe(lobbyId);
+
+    viewer1.close();
+    viewer2.close();
+    streamer.close();
+  });
 });

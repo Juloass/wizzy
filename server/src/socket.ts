@@ -7,6 +7,7 @@ import {
   LobbyCreatedPayload,
   JoinLobbyPayload,
   LobbyJoinedPayload,
+  LobbyFullPayload,
   StartQuestionPayload,
   QuestionStartedPayload,
   SubmitAnswerPayload,
@@ -151,16 +152,25 @@ function handleViewer(
 
   socket.on("join_lobby", (payload: JoinLobbyPayload) => {
     try {
+      const lobby = lobbyManager.getLobby(payload.lobbyId);
+      if (!lobby) {
+        throw new Error("Lobby not found");
+      }
+      if (lobby.viewers.size >= lobby.config.maxPlayers) {
+        const fullMsg: LobbyFullPayload = { lobbyId: payload.lobbyId };
+        socket.emit("lobby_full", fullMsg);
+        return;
+      }
       lobbyManager.joinLobby(payload.lobbyId, { ...auth, socketId: socket.id });
       socket.join(payload.lobbyId);
       const msg: LobbyJoinedPayload = { lobbyId: payload.lobbyId };
       socket.emit("lobby_joined", msg);
 
-      const lobby = lobbyManager.getLobby(payload.lobbyId);
-      if (lobby && lobby.currentQuestion >= 0 && lobby.questionStartedAt) {
-        const q = lobby.quiz.questions[lobby.currentQuestion];
+      const lobbyState = lobbyManager.getLobby(payload.lobbyId);
+      if (lobbyState && lobbyState.currentQuestion >= 0 && lobbyState.questionStartedAt) {
+        const q = lobbyState.quiz.questions[lobbyState.currentQuestion];
         const endsAt =
-          lobby.questionStartedAt + lobby.config.questionDuration * 1000;
+          lobbyState.questionStartedAt + lobbyState.config.questionDuration * 1000;
         const remaining = Math.max(0, (endsAt - Date.now()) / 1000);
         const qMsg: QuestionStartedPayload = {
           id: q.id,
