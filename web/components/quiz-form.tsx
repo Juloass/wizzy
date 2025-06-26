@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -7,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
@@ -109,7 +109,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     if (questions.length === 0) errs.push('At least one question')
     questions.forEach((q, i) => {
       if (q.choices.length < 2 || q.choices.length > 4) {
-        errs.push(`Question ${i + 1} must have 2-4 choices`)
+        errs.push(`Question ${i + 1} must have 2–4 choices`)
       }
     })
     setErrors(errs)
@@ -134,11 +134,11 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     setName(data.name)
     setDescription(data.description || '')
     setQuestions(data.questions)
+    setTab(data.questions?.[0]?.id || 'add')
   }
 
   const onSubmit = () => {
     if (!validate()) return
-    // TODO: submit to backend
     console.log('submit', { name, description, questions })
   }
 
@@ -153,53 +153,77 @@ export default function QuizForm({ quiz }: { quiz: any }) {
                   {idx + 1}
                 </TabsTrigger>
               ))}
-              <TabsTrigger value="add">Add question</TabsTrigger>
+              <TabsTrigger value="add">+ Question</TabsTrigger>
             </TabsList>
+
             {questions.map((q, idx) => {
               const audioEnabled = Boolean(q.audioPromptKey || q.audioRevealKey)
               return (
                 <TabsContent key={q.id} value={q.id} className="space-y-4">
-                  <Input
-                    value={q.text}
-                    onChange={(e) => updateQuestionText(idx, e.target.value)}
-                    placeholder="Question text"
-                  />
-                  {q.choices.map((c, cIdx) => (
-                    <div key={c.id} className="flex items-center gap-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Question {idx + 1}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                       <Input
-                        value={c.text}
-                        onChange={(e) => updateChoice(idx, cIdx, e.target.value)}
-                        placeholder={`Choice ${cIdx + 1}`}
+                        value={q.text}
+                        onChange={(e) => updateQuestionText(idx, e.target.value)}
+                        placeholder="Question text"
                       />
-                      <Button type="button" variant="outline" onClick={() => removeChoice(idx, cIdx)}>
-                        Remove
+                      {q.choices.map((c, cIdx) => (
+                        <div key={c.id} className="flex items-center gap-2">
+                          <Input
+                            value={c.text}
+                            onChange={(e) =>
+                              updateChoice(idx, cIdx, e.target.value)
+                            }
+                            placeholder={`Choice ${cIdx + 1}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => removeChoice(idx, cIdx)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        onClick={() => addChoice(idx)}
+                        disabled={q.choices.length >= 4}
+                      >
+                        Add Choice
                       </Button>
-                    </div>
-                  ))}
-                  <Button type="button" onClick={() => addChoice(idx)} disabled={q.choices.length >= 4}>
-                    Add Choice
-                  </Button>
-                  <div className="flex items-center gap-2">
-                    <Switch checked={audioEnabled} onCheckedChange={(v) => toggleAudio(idx, v)} />
-                    <span className="text-sm">Add sound</span>
-                  </div>
-                  {audioEnabled && (
-                    <div className="flex flex-col gap-2">
-                      <FileDrop
-                        accept="audio/*"
-                        label="Question song"
-                        onFile={(f) => handleAudio(idx, 'prompt', f)}
-                      />
-                      <FileDrop
-                        accept="audio/*"
-                        label="Reveal song"
-                        onFile={(f) => handleAudio(idx, 'reveal', f)}
-                      />
-                    </div>
-                  )}
+
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={audioEnabled}
+                          onCheckedChange={(v) => toggleAudio(idx, v)}
+                        />
+                        <span className="text-sm">Add sound</span>
+                      </div>
+
+                      {audioEnabled && (
+                        <div className="flex flex-col gap-2">
+                          <FileDrop
+                            accept="audio/*"
+                            label="Question song"
+                            onFile={(f) => handleAudio(idx, 'prompt', f)}
+                          />
+                          <FileDrop
+                            accept="audio/*"
+                            label="Reveal song"
+                            onFile={(f) => handleAudio(idx, 'reveal', f)}
+                          />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
                 </TabsContent>
               )
             })}
+
             <TabsContent value="add">
               <Button type="button" onClick={handleAddQuestion}>
                 Add Question
@@ -207,13 +231,18 @@ export default function QuizForm({ quiz }: { quiz: any }) {
             </TabsContent>
           </Tabs>
         </div>
+
         <div className="flex flex-col gap-4 lg:w-1/3">
           <Card>
             <CardHeader>
               <CardTitle>Quiz Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Quiz name" />
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Quiz name"
+              />
               <textarea
                 className="w-full rounded-md border p-2"
                 value={description}
@@ -222,6 +251,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
               />
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Import / Export</CardTitle>
@@ -230,7 +260,9 @@ export default function QuizForm({ quiz }: { quiz: any }) {
               <input
                 type="file"
                 accept="application/json"
-                onChange={(e) => handleImport(e.target.files?.[0] || null)}
+                onChange={(e) =>
+                  handleImport(e.target.files?.[0] || null)
+                }
               />
               <Button type="button" onClick={handleExport}>
                 Export
@@ -239,6 +271,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
           </Card>
         </div>
       </div>
+
       {errors.length > 0 && (
         <Card className="border-destructive">
           <CardContent className="space-y-1 text-destructive">
@@ -248,6 +281,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
           </CardContent>
         </Card>
       )}
+
       <Button onClick={onSubmit}>Save Quiz</Button>
     </div>
   )
