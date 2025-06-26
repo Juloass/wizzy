@@ -3,6 +3,7 @@ import { io as Client } from "socket.io-client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/index";
 import { lobbyManager } from "../src/lobbyManager";
+import type { ErrorPayload } from "@wizzy/shared";
 
 vi.mock("../src/lib/prisma", () => {
   const quiz = {
@@ -185,5 +186,61 @@ describe("socket server", () => {
 
     streamer.close();
     viewer1b.close();
+  });
+
+  it("rejects invalid questionDuration", async () => {
+    const streamer = Client(`http://localhost:${port}`, {
+      auth: { role: "streamer", accessToken: "s1" },
+    });
+    const err = new Promise<ErrorPayload>((r) => streamer.on("error", r));
+    streamer.emit("create_lobby", {
+      quizId: "quiz1",
+      config: { questionDuration: -5 },
+    });
+    const res = await err;
+    expect(res.message).toMatch(/questionDuration/i);
+    streamer.close();
+  });
+
+  it("rejects invalid maxPlayers", async () => {
+    const streamer = Client(`http://localhost:${port}`, {
+      auth: { role: "streamer", accessToken: "s1" },
+    });
+    const err = new Promise<ErrorPayload>((r) => streamer.on("error", r));
+    streamer.emit("create_lobby", {
+      quizId: "quiz1",
+      config: { maxPlayers: 0 },
+    });
+    const res = await err;
+    expect(res.message).toMatch(/maxPlayers/i);
+    streamer.close();
+  });
+
+  it("rejects too long questionDuration", async () => {
+    const streamer = Client(`http://localhost:${port}`, {
+      auth: { role: "streamer", accessToken: "s1" },
+    });
+    const err = new Promise<ErrorPayload>((r) => streamer.on("error", r));
+    streamer.emit("create_lobby", {
+      quizId: "quiz1",
+      config: { questionDuration: 301 },
+    });
+    const res = await err;
+    expect(res.message).toMatch(/questionDuration/i);
+    streamer.close();
+  });
+
+  it("rejects too many maxPlayers", async () => {
+    const streamer = Client(`http://localhost:${port}`, {
+      auth: { role: "streamer", accessToken: "s1" },
+    });
+    const err = new Promise<ErrorPayload>((r) => streamer.on("error", r));
+    streamer.emit("create_lobby", {
+      quizId: "quiz1",
+      config: { maxPlayers: 101 },
+    });
+    const res = await err;
+    expect(res.message).toMatch(/maxPlayers/i);
+    streamer.close();
   });
 });

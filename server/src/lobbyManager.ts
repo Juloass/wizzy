@@ -1,6 +1,13 @@
 import { prisma } from "./lib/prisma";
-import { DEFAULT_MAX_PLAYERS, DEFAULT_QUESTION_DURATION, QuizEndedPayload } from "@wizzy/shared";
+
+import {
+  DEFAULT_MAX_PLAYERS,
+  DEFAULT_QUESTION_DURATION,
+  MAXIMUM_MAX_PLAYERS,
+  MAXIMUM_QUESTION_DURATION,
+} from "@wizzy/shared";
 import { Server as SocketIOServer } from "socket.io";
+
 import {
   LobbyConfig,
   LobbyState,
@@ -32,6 +39,29 @@ class LobbyManager {
       throw new Error("Quiz not found or not owned by streamer");
     }
 
+    const qDuration =
+      config?.questionDuration ?? DEFAULT_QUESTION_DURATION;
+    if (
+      config?.questionDuration !== undefined &&
+      (typeof config.questionDuration !== "number" ||
+        !isFinite(config.questionDuration) ||
+        config.questionDuration <= 0 ||
+        config.questionDuration > MAXIMUM_QUESTION_DURATION)
+    ) {
+      throw new Error("Invalid questionDuration");
+    }
+
+    const maxPlayers = config?.maxPlayers ?? DEFAULT_MAX_PLAYERS;
+    if (
+      config?.maxPlayers !== undefined &&
+      (typeof config.maxPlayers !== "number" ||
+        !Number.isInteger(config.maxPlayers) ||
+        config.maxPlayers <= 0 ||
+        config.maxPlayers > MAXIMUM_MAX_PLAYERS)
+    ) {
+      throw new Error("Invalid maxPlayers");
+    }
+
     const lobbyId = randomUUID();
     const lobby: LobbyState = {
       id: lobbyId,
@@ -39,8 +69,8 @@ class LobbyManager {
       hostSocketId,
       quiz: quiz as QuizWithQuestions,
       config: {
-        maxPlayers: config?.maxPlayers ?? DEFAULT_MAX_PLAYERS,
-        questionDuration: config?.questionDuration ?? DEFAULT_QUESTION_DURATION,
+        maxPlayers,
+        questionDuration: qDuration,
       },
       viewers: new Map(),
       participants: new Map(),
