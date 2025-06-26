@@ -23,15 +23,16 @@ export interface LobbyConfig {
 export interface LobbyState {
   id: string;
   hostId: string;
-  hostSocketId: string;
+  hostSocketId?: string;
   quiz: QuizWithQuestions;
   config: LobbyConfig;
   viewers: Map<string, ViewerInLobby>;
+  participants: Map<string, ViewerInLobby>;
   scores: Map<string, number>;
   currentQuestion: number;
   answers: Map<string, Map<string, number>>;
-  questionTimer?: NodeJS.Timeout;
   questionStartedAt?: number;
+  reconnectTimer?: NodeJS.Timeout;
 }
 
 export interface QuizEndResult {

@@ -1,5 +1,13 @@
 import { prisma } from "./lib/prisma";
-import { DEFAULT_MAX_PLAYERS, DEFAULT_QUESTION_DURATION } from "@wizzy/shared";
+
+import {
+  DEFAULT_MAX_PLAYERS,
+  DEFAULT_QUESTION_DURATION,
+  MAXIMUM_MAX_PLAYERS,
+  MAXIMUM_QUESTION_DURATION,
+} from "@wizzy/shared";
+import { Server as SocketIOServer } from "socket.io";
+
 import {
   LobbyConfig,
   LobbyState,
@@ -31,6 +39,29 @@ class LobbyManager {
       throw new Error("Quiz not found or not owned by streamer");
     }
 
+    const qDuration =
+      config?.questionDuration ?? DEFAULT_QUESTION_DURATION;
+    if (
+      config?.questionDuration !== undefined &&
+      (typeof config.questionDuration !== "number" ||
+        !isFinite(config.questionDuration) ||
+        config.questionDuration <= 0 ||
+        config.questionDuration > MAXIMUM_QUESTION_DURATION)
+    ) {
+      throw new Error("Invalid questionDuration");
+    }
+
+    const maxPlayers = config?.maxPlayers ?? DEFAULT_MAX_PLAYERS;
+    if (
+      config?.maxPlayers !== undefined &&
+      (typeof config.maxPlayers !== "number" ||
+        !Number.isInteger(config.maxPlayers) ||
+        config.maxPlayers <= 0 ||
+        config.maxPlayers > MAXIMUM_MAX_PLAYERS)
+    ) {
+      throw new Error("Invalid maxPlayers");
+    }
+
     const lobbyId = randomUUID();
     const lobby: LobbyState = {
       id: lobbyId,
@@ -38,10 +69,11 @@ class LobbyManager {
       hostSocketId,
       quiz: quiz as QuizWithQuestions,
       config: {
-        maxPlayers: config?.maxPlayers ?? DEFAULT_MAX_PLAYERS,
-        questionDuration: config?.questionDuration ?? DEFAULT_QUESTION_DURATION,
+        maxPlayers,
+        questionDuration: qDuration,
       },
       viewers: new Map(),
+      participants: new Map(),
       scores: new Map(),
       currentQuestion: -1,
       answers: new Map(),
@@ -66,6 +98,7 @@ class LobbyManager {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby) throw new Error("Lobby not found");
     lobby.viewers.set(viewer.id, viewer);
+    lobby.participants.set(viewer.id, viewer);
     if (!lobby.scores.has(viewer.id)) {
       lobby.scores.set(viewer.id, 0);
     }
@@ -150,7 +183,7 @@ class LobbyManager {
 
     const results: QuizEndResult[] = [];
 
-    for (const viewer of lobby.viewers.values()) {
+    for (const viewer of lobby.participants.values()) {
       const viewerRecord = await prisma.viewer.upsert({
         where: { twitchUserId: viewer.id },
         update: { displayName: viewer.displayName },
@@ -180,6 +213,37 @@ class LobbyManager {
 
     this.lobbies.delete(lobbyId);
     return results;
+  }
+
+  handleHostDisconnect(
+    io: SocketIOServer,
+    hostId: string
+  ) {
+    for (const lobby of this.lobbies.values()) {
+      if (lobby.hostId === hostId) {
+        lobby.hostSocketId = undefined;
+        if (lobby.reconnectTimer) {
+          clearTimeout(lobby.reconnectTimer);
+        }
+        lobby.reconnectTimer = setTimeout(async () => {
+          const results = await this.endQuiz(lobby.id);
+          const msg: QuizEndedPayload = { results };
+          io.to(lobby.id).emit("quiz_ended", msg);
+        }, 60 * 60 * 1000); // 1 hour
+      }
+    }
+  }
+
+  handleHostReconnect(hostId: string, socketId: string) {
+    for (const lobby of this.lobbies.values()) {
+      if (lobby.hostId === hostId) {
+        lobby.hostSocketId = socketId;
+        if (lobby.reconnectTimer) {
+          clearTimeout(lobby.reconnectTimer);
+          lobby.reconnectTimer = undefined;
+        }
+      }
+    }
   }
 
   removeLobbiesByHost(hostId: string) {
