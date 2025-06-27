@@ -237,12 +237,20 @@ export default function QuizForm({ quiz }: { quiz: any }) {
                         <div className="flex flex-col gap-2">
                           <FileDrop
                             accept="audio/*"
-                            label="Question song"
+                            label={
+                              q.audioPromptKey
+                                ? `Question song: ${q.audioPromptKey}`
+                                : 'Question song'
+                            }
                             onFile={(f) => handleAudio(idx, 'prompt', f)}
                           />
                           <FileDrop
                             accept="audio/*"
-                            label="Reveal song"
+                            label={
+                              q.audioRevealKey
+                                ? `Reveal song: ${q.audioRevealKey}`
+                                : 'Reveal song'
+                            }
                             onFile={(f) => handleAudio(idx, 'reveal', f)}
                           />
                         </div>
