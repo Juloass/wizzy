@@ -242,6 +242,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
                                 ? `Question song: ${q.audioPromptKey}`
                                 : 'Question song'
                             }
+                            playKey={q.audioPromptKey ?? undefined}
                             onFile={(f) => handleAudio(idx, 'prompt', f)}
                           />
                           <FileDrop
@@ -251,6 +252,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
                                 ? `Reveal song: ${q.audioRevealKey}`
                                 : 'Reveal song'
                             }
+                            playKey={q.audioRevealKey ?? undefined}
                             onFile={(f) => handleAudio(idx, 'reveal', f)}
                           />
                         </div>
