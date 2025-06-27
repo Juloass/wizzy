@@ -6,7 +6,7 @@ import QuizForm from '@/components/quiz-form';
 interface Props { params: { id: string } }
 
 export default async function QuizPage({ params }: Props) {
-  const { id } = params;
+  const { id } = await params;
   const user = await getCurrentUser();
   if (!user) return null;
 
