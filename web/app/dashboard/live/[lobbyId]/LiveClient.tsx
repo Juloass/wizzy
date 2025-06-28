@@ -13,6 +13,7 @@ import type {
 import { DEFAULT_QUESTION_DURATION } from "@wizzy/shared";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
+import ErrorScreen from "@/components/error-screen";
 
 type EventsByDirection<D extends SocketDirection> = {
   [K in keyof SocketEventDefinition as D extends SocketEventDefinition[K]["direction"]
@@ -35,6 +36,7 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
   const [stats, setStats] = useState<[number, number][]>([]);
   const [scoreboard, setScoreboard] = useState<ScoreEntry[]>([]);
   const [remaining, setRemaining] = useState(0);
+  const [connectError, setConnectError] = useState(false);
   const duration = useRef(DEFAULT_QUESTION_DURATION);
   const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents>>();
 
@@ -59,7 +61,11 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
     socket.connect();
 
     socket.on("connect_error", () => {
+      setConnectError(true);
       toast.error("Failed to connect to server");
+    });
+    socket.on("connect", () => {
+      setConnectError(false);
     });
     socket.on("disconnect", (reason) => {
       toast.error(`Disconnected: ${reason}`);
@@ -106,6 +112,18 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
   const progress = duration.current
     ? Math.max(0, Math.min(100, (remaining / duration.current) * 100))
     : 0;
+
+  useEffect(() => {
+    if (!connectError) return;
+    const id = setTimeout(() => {
+      socketRef.current?.connect();
+    }, 3000);
+    return () => clearTimeout(id);
+  }, [connectError]);
+
+  if (connectError) {
+    return <ErrorScreen title="Server Unreachable" message="Could not connect to live server." />;
+  }
 
   return (
     <div className="flex h-full">
