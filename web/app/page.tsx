@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { Plug, Palette, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { getCurrentUser } from '@/lib/auth'
+import ErrorScreen from '@/components/error-screen'
+import { tryWithError } from '@/lib/try-with-error'
 
 function Feature({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
@@ -14,7 +16,12 @@ function Feature({ icon, title, description }: { icon: React.ReactNode; title: s
 }
 
 export default async function Home() {
-  const user = await getCurrentUser()
+  const [user, userError] = await tryWithError(() => getCurrentUser())
+
+  if (userError) {
+    return <ErrorScreen title="Database Unreachable" />
+  }
+
   return (
     <main className="bg-[#0E0E12] text-white">
       <section className="min-h-screen flex items-center bg-gradient-to-br from-[#121218] to-[#0E0E12] px-8">

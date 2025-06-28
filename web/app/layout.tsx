@@ -5,6 +5,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { getCurrentUser } from "@/lib/auth"
 import ProfileMenu from "@/components/profile-menu"
+import ErrorScreen from "@/components/error-screen"
+import { tryWithError } from "@/lib/try-with-error"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,7 +28,19 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const user = await getCurrentUser()
+  const [user, userError] = await tryWithError(() => getCurrentUser())
+
+  if (userError) {
+    return (
+      <html lang="en" className="dark">
+        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          <ErrorScreen title="Database Unreachable" />
+          <Toaster richColors />
+        </body>
+      </html>
+    )
+  }
+
   return (
     <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
