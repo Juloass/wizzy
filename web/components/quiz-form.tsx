@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { FileDrop } from '@/components/ui/file-drop'
 import { exportQuiz, importQuiz } from '@/lib/quizIO'
 import { storeAudioBlob } from '@/lib/audio'
+import { toast } from '@/components/ui/sonner'
 
 interface Choice {
   id: string
@@ -168,6 +169,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     } else {
       const msg = await res.text()
       setErrors([msg || 'Failed to save'])
+      toast.error(msg || 'Failed to save')
     }
   }
 

@@ -12,6 +12,7 @@ import type {
 } from "@wizzy/shared";
 import { DEFAULT_QUESTION_DURATION } from "@wizzy/shared";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/sonner";
 
 type EventsByDirection<D extends SocketDirection> = {
   [K in keyof SocketEventDefinition as D extends SocketEventDefinition[K]["direction"]
@@ -56,6 +57,13 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
     );
     socketRef.current = socket;
     socket.connect();
+
+    socket.on("connect_error", () => {
+      toast.error("Failed to connect to server");
+    });
+    socket.on("disconnect", (reason) => {
+      toast.error(`Disconnected: ${reason}`);
+    });
 
     socket.on("question_started", (q: QuestionStartedPayload) => {
       setQuestion(q);
