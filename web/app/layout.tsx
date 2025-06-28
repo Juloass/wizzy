@@ -29,6 +29,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   const [user, userError] = await tryWithError(() => getCurrentUser())
+
   if (userError) {
     return (
       <html lang="en" className="dark">
@@ -39,6 +40,7 @@ export default async function RootLayout({
       </html>
     )
   }
+
   return (
     <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
