@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google"
 import Link from "next/link"
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { getCurrentUser } from "@/lib/auth"
+import ProfileMenu from "@/components/profile-menu"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,11 +21,12 @@ export const metadata: Metadata = {
   description: "Quiz dashboard",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const user = await getCurrentUser()
   return (
     <html lang="en" className="dark">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
@@ -35,11 +38,13 @@ export default function RootLayout({
             </Link>
             <nav className="flex items-center gap-8">
               <a href="#features" className="text-white hover:underline">Features</a>
-              <form action="/api/auth/logout" method="post">
-                <button type="submit" className="underline text-sm text-white">
-                  Logout
-                </button>
-              </form>
+              {user ? (
+                <ProfileMenu user={user} />
+              ) : (
+                <Link href="/login" className="underline text-sm text-white">
+                  Login
+                </Link>
+              )}
             </nav>
           </div>
         </header>

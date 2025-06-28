@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Plug, Palette, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { getCurrentUser } from '@/lib/auth'
 
 function Feature({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
@@ -12,7 +13,8 @@ function Feature({ icon, title, description }: { icon: React.ReactNode; title: s
   )
 }
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser()
   return (
     <main className="bg-[#0E0E12] text-white">
       <section className="min-h-screen flex items-center bg-gradient-to-br from-[#121218] to-[#0E0E12] px-8">
@@ -21,7 +23,7 @@ export default function Home() {
             <h1 className="text-4xl md:text-6xl font-extrabold">Interactive quizzes for your stream</h1>
             <p className="text-[#C0C0C0] text-lg max-w-md">Wizzy lets you run live quizzes to boost viewer engagement. Free and easy to set up.</p>
             <Button asChild size="lg" className="bg-[#9147FF] hover:bg-[#A974FF] transition-transform hover:scale-105 px-8 py-4 rounded-lg">
-              <Link href="/login">Get Started</Link>
+              <Link href={user ? "/dashboard" : "/login"}>{user ? "Dashboard" : "Get Started"}</Link>
             </Button>
           </div>
           <div className="flex justify-center">
