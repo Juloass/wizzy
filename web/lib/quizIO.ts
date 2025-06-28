@@ -1,8 +1,9 @@
-import { getAudioBlob, storeAudioBlob } from './audio';
+import { getAudioBlob, storeAudioBlob } from './audio'
+import type { QuizPayload, QuestionPayload } from './types'
 
-export async function exportQuiz(quiz: any) {
+export async function exportQuiz(quiz: QuizPayload & { id: string }) {
   const questions = await Promise.all(
-    quiz.questions.map(async (q: any) => {
+    quiz.questions.map(async (q: QuestionPayload) => {
       const prompt = q.audioPromptKey && (await getAudioBlob(q.audioPromptKey));
       const reveal = q.audioRevealKey && (await getAudioBlob(q.audioRevealKey));
       return {
@@ -15,10 +16,10 @@ export async function exportQuiz(quiz: any) {
   return JSON.stringify({ ...quiz, questions }, null, 2);
 }
 
-export async function importQuiz(json: string) {
-  const data = JSON.parse(json);
+export async function importQuiz(json: string): Promise<QuizPayload & { id?: string }> {
+  const data = JSON.parse(json) as QuizPayload & { id?: string };
   const questions = await Promise.all(
-    data.questions.map(async (q: any) => {
+    data.questions.map(async (q) => {
       const {
         audioPrompt,
         audioReveal,

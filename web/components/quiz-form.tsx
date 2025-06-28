@@ -15,28 +15,17 @@ import { FileDrop } from '@/components/ui/file-drop'
 import { exportQuiz, importQuiz } from '@/lib/quizIO'
 import { storeAudioBlob } from '@/lib/audio'
 import { toast } from '@/components/ui/sonner'
+import type { QuizPayload, QuestionPayload } from '@/lib/types'
 
-interface Choice {
-  id: string
-  text: string
-  index: number
-}
-interface Question {
-  id: string
-  text: string
-  choices: Choice[]
-  correctChoice: number
-  audioPromptKey?: string | null
-  audioRevealKey?: string | null
-  order: number
+interface QuestionForm extends QuestionPayload {
   audioEnabled?: boolean
 }
 
-export default function QuizForm({ quiz }: { quiz: any }) {
+export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } }) {
   const [name, setName] = useState(quiz.name || '')
   const [description, setDescription] = useState(quiz.description || '')
-  const [questions, setQuestions] = useState<Question[]>(
-    (quiz.questions || []).map((q: any) => ({
+  const [questions, setQuestions] = useState<QuestionForm[]>(
+    (quiz.questions || []).map((q) => ({
       ...q,
       audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
     }))
@@ -144,7 +133,7 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     setName(data.name)
     setDescription(data.description || '')
     setQuestions(
-      data.questions.map((q: any) => ({
+      data.questions.map((q) => ({
         ...q,
         audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
       }))
@@ -157,7 +146,10 @@ export default function QuizForm({ quiz }: { quiz: any }) {
     const payload = {
       name,
       description,
-      questions: questions.map(({ audioEnabled, ...q }) => q),
+      questions: questions.map((q) => {
+        const { audioEnabled: _, ...rest } = q // eslint-disable-line @typescript-eslint/no-unused-vars
+        return rest
+      }),
     }
     const res = await fetch(quiz.id ? `/api/quiz/${quiz.id}` : '/api/quiz', {
       method: quiz.id ? 'PUT' : 'POST',
