@@ -1,11 +1,19 @@
-import { prisma } from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/auth';
-import Link from 'next/link';
+import { prisma } from '@/lib/prisma'
+import { getCurrentUser } from '@/lib/auth'
+import Link from 'next/link'
+import ErrorScreen from '@/components/error-screen'
+import { tryWithError } from '@/lib/try-with-error'
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
-  if (!user) return null;
-  const quizzes = await prisma.quiz.findMany({ where: { ownerId: user.id } });
+  const [user, userError] = await tryWithError(() => getCurrentUser())
+  if (userError) return <ErrorScreen title="Database Unreachable" />
+  if (!user) return null
+
+  const [quizzes, quizError] = await tryWithError(() =>
+    prisma.quiz.findMany({ where: { ownerId: user.id } })
+  )
+  if (quizError) return <ErrorScreen title="Database Unreachable" />
+
   return (
     <main className="p-8">
       <h1 className="text-2xl font-bold mb-4">Your Quizzes</h1>
