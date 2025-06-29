@@ -2,7 +2,12 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { FileDrop } from "@/components/ui/file-drop";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
@@ -181,16 +186,10 @@ export default function QuizForm({
         className="w-[300px] flex flex-col p-6 space-y-6 "
         style={{ backgroundColor: "#15151A" }}
       >
-        <div className="flex items-center gap-2 text-xl font-bold ">
-          <span role="img" aria-label="wizard">
-            🧙‍♂️
-          </span>
-          <span>Wizzy</span>
-        </div>
         <Button
           type="button"
           onClick={handleAddQuestion}
-          className="w-full bg-[#9147FF] hover:bg-[#A86EFF]"
+          className="w-full bg-[#9147FF] hover:bg-[#A86EFF] cursor-pointer"
         >
           + Add Question
         </Button>
@@ -208,6 +207,7 @@ export default function QuizForm({
               className={cn(
                 "justify-start",
                 "px-4",
+                "cursor-pointer",
                 tab === q.id
                   ? "border border-[#9147FF] bg-[#9147FF]/20 text-white"
                   : "bg-[#202026] text-[#C0C0C0] hover:bg-[#23232A]"
@@ -230,6 +230,7 @@ export default function QuizForm({
         >
           <h2 className="text-2xl font-semibold">{name || "Quiz Name"}</h2>
           <Dialog>
+            <DialogTitle>Quizz Settings</DialogTitle>
             <DialogTrigger asChild>
               <Button
                 variant="ghost"
