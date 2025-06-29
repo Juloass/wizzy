@@ -1,21 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from '@/components/ui/card'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { FileDrop } from '@/components/ui/file-drop'
-import { exportQuiz, importQuiz } from '@/lib/quizIO'
+import { Trash2 } from 'lucide-react'
+import { Inter } from 'next/font/google'
+import { cn } from '@/lib/utils'
 import { storeAudioBlob } from '@/lib/audio'
 import { toast } from '@/components/ui/sonner'
 import type { QuizPayload, QuestionPayload } from '@/lib/types'
+
+const inter = Inter({ subsets: ['latin'] })
 
 interface QuestionForm extends QuestionPayload {
   audioEnabled?: boolean
@@ -23,7 +18,7 @@ interface QuestionForm extends QuestionPayload {
 
 export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } }) {
   const [name, setName] = useState(quiz.name || '')
-  const [description, setDescription] = useState(quiz.description || '')
+  const [description] = useState(quiz.description || '')
   const [questions, setQuestions] = useState<QuestionForm[]>(
     (quiz.questions || []).map((q) => ({
       ...q,
@@ -115,31 +110,11 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
     return errs.length === 0
   }
 
-  const handleExport = async () => {
-    const json = await exportQuiz({ id: quiz.id, name, description, questions })
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'quiz.json'
-    a.click()
-    URL.revokeObjectURL(url)
+  const editQuizName = () => {
+    const newName = window.prompt('Quiz name', name)
+    if (newName !== null) setName(newName)
   }
 
-  const handleImport = async (file: File | null) => {
-    if (!file) return
-    const text = await file.text()
-    const data = await importQuiz(text)
-    setName(data.name)
-    setDescription(data.description || '')
-    setQuestions(
-      data.questions.map((q) => ({
-        ...q,
-        audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
-      }))
-    )
-    setTab(data.questions?.[0]?.id || 'add')
-  }
 
   const onSubmit = async () => {
     if (!validate()) return
@@ -166,156 +141,144 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-6 lg:flex-row">
-        <div className="flex-1">
-          <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-            <TabsList className="mb-4">
-              {questions.map((q, idx) => (
-                <TabsTrigger key={q.id} value={q.id}>
-                  {idx + 1}
-                </TabsTrigger>
-              ))}
-              <TabsTrigger value="add">+ Question</TabsTrigger>
-            </TabsList>
-
-            {questions.map((q, idx) => {
-              const audioEnabled = q.audioEnabled ?? Boolean(q.audioPromptKey || q.audioRevealKey)
-              return (
-                <TabsContent key={q.id} value={q.id} className="space-y-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Question {idx + 1}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <Input
-                        value={q.text}
-                        onChange={(e) => updateQuestionText(idx, e.target.value)}
-                        placeholder="Question text"
-                      />
-                      {q.choices.map((c, cIdx) => (
-                        <div key={c.id} className="flex items-center gap-2">
-                          <Input
-                            value={c.text}
-                            onChange={(e) =>
-                              updateChoice(idx, cIdx, e.target.value)
-                            }
-                            placeholder={`Choice ${cIdx + 1}`}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => removeChoice(idx, cIdx)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      ))}
-                      <Button
-                        type="button"
-                        onClick={() => addChoice(idx)}
-                        disabled={q.choices.length >= 4}
-                      >
-                        Add Choice
-                      </Button>
-
-                      <div className="flex items-center gap-2">
-                        <Switch
-                          checked={audioEnabled}
-                          onCheckedChange={(v) => toggleAudio(idx, v)}
-                        />
-                        <span className="text-sm">Add sound</span>
-                      </div>
-
-                      {audioEnabled && (
-                        <div className="flex flex-col gap-2">
-                          <FileDrop
-                            accept="audio/*"
-                            label={
-                              q.audioPromptKey
-                                ? `Question song: ${q.audioPromptKey}`
-                                : 'Question song'
-                            }
-                            playKey={q.audioPromptKey ?? undefined}
-                            onFile={(f) => handleAudio(idx, 'prompt', f)}
-                          />
-                          <FileDrop
-                            accept="audio/*"
-                            label={
-                              q.audioRevealKey
-                                ? `Reveal song: ${q.audioRevealKey}`
-                                : 'Reveal song'
-                            }
-                            playKey={q.audioRevealKey ?? undefined}
-                            onFile={(f) => handleAudio(idx, 'reveal', f)}
-                          />
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              )
-            })}
-
-            <TabsContent value="add">
-              <Button type="button" onClick={handleAddQuestion}>
-                Add Question
-              </Button>
-            </TabsContent>
-          </Tabs>
+    <div
+      className={cn(
+        'flex min-h-screen text-white',
+        inter.className,
+      )}
+      style={{ backgroundColor: '#0E0E12' }}
+    >
+      <aside
+        className="w-[300px] flex flex-col p-6 space-y-6"
+        style={{ backgroundColor: '#15151A' }}
+      >
+        <div className="flex items-center gap-2 text-xl font-bold">
+          <span role="img" aria-label="wizard">🧙‍♂️</span>
+          <span>Wizzy</span>
         </div>
-
-        <div className="flex flex-col gap-4 lg:w-1/3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quiz Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Quiz name"
-              />
-              <textarea
-                className="w-full rounded-md border p-2"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Description"
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Import / Export</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
+        <button
+          type="button"
+          onClick={handleAddQuestion}
+          className="w-full rounded-md bg-[#9147FF] py-2 transition-colors hover:bg-[#A86EFF]"
+        >
+          + Add Question
+        </button>
+        <div className="flex flex-col gap-2 overflow-y-auto pr-2">
+          {questions.map((q, idx) => (
+            <button
+              key={q.id}
+              onClick={() => setTab(q.id)}
+              className={cn(
+                'px-4 py-2 rounded-full text-left text-sm',
+                tab === q.id
+                  ? 'border border-[#9147FF] bg-[#9147FF]/20 text-white'
+                  : 'bg-[#202026] text-[#C0C0C0] hover:bg-[#23232A]'
+              )}
+            >
+              Question {idx + 1}
+            </button>
+          ))}
+        </div>
+      </aside>
+      <main className="flex-1 overflow-y-auto p-8 space-y-8">
+        <div
+          className="flex items-center justify-between rounded-lg p-6 shadow"
+          style={{ backgroundColor: '#15151A' }}
+        >
+          <h2 className="text-2xl font-semibold">{name || 'Quiz Name'}</h2>
+          <button type="button" onClick={editQuizName} className="text-xl">⚙️</button>
+        </div>
+        {questions.map((q, idx) => {
+          const audioEnabled = q.audioEnabled ?? Boolean(q.audioPromptKey || q.audioRevealKey)
+          if (q.id !== tab) return null
+          return (
+            <div
+              key={q.id}
+              className="space-y-6 rounded-lg p-6 shadow"
+              style={{ backgroundColor: '#15151A' }}
+            >
               <input
-                type="file"
-                accept="application/json"
-                onChange={(e) =>
-                  handleImport(e.target.files?.[0] || null)
-                }
+                className="w-full rounded-md border px-3 py-2 text-sm placeholder-[#C0C0C0]"
+                style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
+                value={q.text}
+                onChange={(e) => updateQuestionText(idx, e.target.value)}
+                placeholder="Question text"
               />
-              <Button type="button" onClick={handleExport}>
-                Export
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {errors.length > 0 && (
-        <Card className="border-destructive">
-          <CardContent className="space-y-1 text-destructive">
+              <label className="flex items-center gap-3 text-[#C0C0C0]">
+                <Switch
+                  checked={audioEnabled}
+                  onCheckedChange={(v) => toggleAudio(idx, v)}
+                  className="data-[state=checked]:bg-[#9147FF]"
+                />
+                Enable Sounds
+              </label>
+              {q.choices.map((c, cIdx) => (
+                <div key={c.id} className="flex items-center gap-3">
+                  <input
+                    className="flex-1 rounded-md border px-3 py-2 text-sm placeholder-[#C0C0C0]"
+                    style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
+                    value={c.text}
+                    onChange={(e) => updateChoice(idx, cIdx, e.target.value)}
+                    placeholder={`Answer ${cIdx + 1}`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeChoice(idx, cIdx)}
+                    className="text-[#C0C0C0] transition-colors hover:text-white"
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => addChoice(idx)}
+                disabled={q.choices.length >= 4}
+                className="w-full rounded-md bg-[#9147FF] py-2 text-sm transition-colors hover:bg-[#A86EFF] disabled:opacity-50"
+              >
+                + Add Answer
+              </button>
+              {audioEnabled && (
+                <div className="space-y-2">
+                  <FileDrop
+                    accept="audio/*"
+                    label={
+                      q.audioPromptKey
+                        ? `Question audio: ${q.audioPromptKey}`
+                        : 'Question audio'
+                    }
+                    playKey={q.audioPromptKey ?? undefined}
+                    onFile={(f) => handleAudio(idx, 'prompt', f)}
+                  />
+                  <FileDrop
+                    accept="audio/*"
+                    label={
+                      q.audioRevealKey
+                        ? `Reveal audio: ${q.audioRevealKey}`
+                        : 'Reveal audio'
+                    }
+                    playKey={q.audioRevealKey ?? undefined}
+                    onFile={(f) => handleAudio(idx, 'reveal', f)}
+                  />
+                </div>
+              )}
+            </div>
+          )
+        })}
+        {errors.length > 0 && (
+          <div className="space-y-1 rounded-md border border-destructive p-4 text-destructive">
             {errors.map((e) => (
               <div key={e}>{e}</div>
             ))}
-          </CardContent>
-        </Card>
-      )}
-
-      <Button onClick={onSubmit}>Save Quiz</Button>
+          </div>
+        )}
+        <button
+          onClick={onSubmit}
+          className="rounded-md bg-[#9147FF] px-4 py-2 transition-colors hover:bg-[#A86EFF]"
+        >
+          Save Quiz
+        </button>
+      </main>
     </div>
   )
 }
