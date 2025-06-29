@@ -146,6 +146,7 @@ export interface QuestionStartedPayload {
   text: string;
   choices: { index: number; text: string }[];
   audioPromptKey?: string | null;
+  imageKey?: string | null;
   remaining?: number;
 }
 

@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
 import { storeAudioBlob } from "@/lib/audio";
+import { storeImageBlob } from "@/lib/image";
 import { exportQuiz, importQuiz } from "@/lib/quizIO";
 import type { QuestionPayload, QuizPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 interface QuestionForm extends QuestionPayload {
   audioEnabled?: boolean;
+  imageEnabled?: boolean;
 }
 
 export default function QuizForm({
@@ -38,6 +40,7 @@ export default function QuizForm({
     (quiz.questions || []).map((q) => ({
       ...q,
       audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
+      imageEnabled: Boolean(q.imageKey),
     }))
   );
   const [errors, setErrors] = useState<string[]>([]);
@@ -53,6 +56,7 @@ export default function QuizForm({
         choices: [],
         correctChoice: 0,
         audioEnabled: false,
+        imageEnabled: false,
         order: questions.length,
       },
     ]);
@@ -112,6 +116,24 @@ export default function QuizForm({
     setQuestions(copy);
   };
 
+  const handleImage = async (idx: number, file: File | null) => {
+    if (!file) return;
+    const key = await storeImageBlob(file);
+    const copy = [...questions];
+    copy[idx].imageKey = key;
+    copy[idx].imageEnabled = true;
+    setQuestions(copy);
+  };
+
+  const toggleImage = (idx: number, enabled: boolean) => {
+    const copy = [...questions];
+    if (!enabled) {
+      copy[idx].imageKey = null;
+    }
+    copy[idx].imageEnabled = enabled;
+    setQuestions(copy);
+  };
+
   const validate = () => {
     const errs: string[] = [];
     if (!name.trim()) errs.push("Quiz name required");
@@ -135,6 +157,7 @@ export default function QuizForm({
         (data.questions || []).map((q) => ({
           ...q,
           audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
+          imageEnabled: Boolean(q.imageKey),
         }))
       );
       toast.success("Imported quiz");
@@ -147,8 +170,9 @@ export default function QuizForm({
     exportQuiz({
       name,
       description,
-      questions: questions.map(({ audioEnabled, ...rest }) => {
+      questions: questions.map(({ audioEnabled, imageEnabled, ...rest }) => {
         void audioEnabled;
+        void imageEnabled;
         return rest;
       }),
     });
@@ -159,8 +183,9 @@ export default function QuizForm({
     const payload = {
       name,
       description,
-      questions: questions.map(({ audioEnabled, ...rest }) => {
+      questions: questions.map(({ audioEnabled, imageEnabled, ...rest }) => {
         void audioEnabled;
+        void imageEnabled;
         return rest;
       }),
     };
@@ -290,6 +315,7 @@ export default function QuizForm({
         {questions.map((q, idx) => {
           const audioEnabled =
             q.audioEnabled ?? Boolean(q.audioPromptKey || q.audioRevealKey);
+          const imageEnabled = q.imageEnabled ?? Boolean(q.imageKey);
           if (q.id !== tab) return null;
           return (
             <Card
@@ -304,6 +330,22 @@ export default function QuizForm({
                   placeholder="Question text"
                   style={{ backgroundColor: "#202026", borderColor: "#2A2A33" }}
                 />
+                <label className="flex items-center gap-3 text-[#C0C0C0]">
+                  <Switch
+                    checked={imageEnabled}
+                    onCheckedChange={(v) => toggleImage(idx, v)}
+                    className="data-[state=checked]:bg-[#9147FF]"
+                  />
+                  Attach Image
+                </label>
+                {imageEnabled && (
+                  <FileInput
+                    accept="image/*"
+                    label={q.imageKey ? `Image: ${q.imageKey}` : "Question image"}
+                    onFile={(f) => handleImage(idx, f)}
+                    className="bg-[#202026] border-[#2A2A33]"
+                  />
+                )}
                 <label className="flex items-center gap-3 text-[#C0C0C0]">
                   <Switch
                     checked={audioEnabled}

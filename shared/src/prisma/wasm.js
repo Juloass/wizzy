@@ -146,6 +146,7 @@ exports.Prisma.QuestionScalarFieldEnum = {
   text: 'text',
   audioPromptKey: 'audioPromptKey',
   audioRevealKey: 'audioRevealKey',
+  imageKey: 'imageKey',
   correctChoice: 'correctChoice',
   order: 'order'
 };

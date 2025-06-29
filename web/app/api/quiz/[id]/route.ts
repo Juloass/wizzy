@@ -35,6 +35,7 @@ export async function PUT(req: Request, { params }: Props) {
           text: q.text,
           audioPromptKey: q.audioPromptKey,
           audioRevealKey: q.audioRevealKey,
+          imageKey: q.imageKey,
           correctChoice: q.correctChoice,
           order: idx,
           choices: {
