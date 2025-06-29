@@ -120,30 +120,33 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
     return errs.length === 0
   }
 
-  const handleExport = async () => {
-    const json = await exportQuiz({ id: quiz.id, name, description, questions })
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'quiz.json'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
   const handleImport = async (file: File | null) => {
     if (!file) return
-    const text = await file.text()
-    const data = await importQuiz(text)
-    setName(data.name)
-    setDescription(data.description || '')
-    setQuestions(
-      data.questions.map((q) => ({
-        ...q,
-        audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
-      }))
-    )
-    setTab(data.questions?.[0]?.id || 'add')
+    try {
+      const data = await importQuiz(file)
+      setName(data.name || '')
+      setDescription(data.description || '')
+      setQuestions(
+        (data.questions || []).map((q) => ({
+          ...q,
+          audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
+        }))
+      )
+      toast.success('Imported quiz')
+    } catch (e) {
+      toast.error('Failed to import')
+    }
+  }
+
+  const handleExport = () => {
+    exportQuiz({
+      name,
+      description,
+      questions: questions.map((q) => {
+        const { audioEnabled: _, ...rest } = q
+        return rest
+      }),
+    })
   }
 
   const onSubmit = async () => {
@@ -152,7 +155,7 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
       name,
       description,
       questions: questions.map((q) => {
-        const { audioEnabled: _, ...rest } = q // eslint-disable-line @typescript-eslint/no-unused-vars
+        const { audioEnabled: _, ...rest } = q
         return rest
       }),
     }
@@ -279,57 +282,57 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                   />
                   Enable Sounds
                 </label>
-              {q.choices.map((c, cIdx) => (
-                <div key={c.id} className="flex items-center gap-3">
-                  <Input
-                    className="flex-1"
-                    style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
-                    value={c.text}
-                    onChange={(e) => updateChoice(idx, cIdx, e.target.value)}
-                    placeholder={`Answer ${cIdx + 1}`}
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => removeChoice(idx, cIdx)}
-                    variant="ghost"
-                    className="text-[#C0C0C0] hover:text-white"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                type="button"
-                onClick={() => addChoice(idx)}
-                disabled={q.choices.length >= 4}
-                className="w-full bg-[#9147FF] hover:bg-[#A86EFF]"
-              >
-                + Add Answer
-              </Button>
-              {audioEnabled && (
-                <div className="space-y-2">
-                  <FileDrop
-                    accept="audio/*"
-                    label={
-                      q.audioPromptKey
-                        ? `Question audio: ${q.audioPromptKey}`
-                        : 'Question audio'
-                    }
-                    playKey={q.audioPromptKey ?? undefined}
-                    onFile={(f) => handleAudio(idx, 'prompt', f)}
-                  />
-                  <FileDrop
-                    accept="audio/*"
-                    label={
-                      q.audioRevealKey
-                        ? `Reveal audio: ${q.audioRevealKey}`
-                        : 'Reveal audio'
-                    }
-                    playKey={q.audioRevealKey ?? undefined}
-                    onFile={(f) => handleAudio(idx, 'reveal', f)}
-                  />
-                </div>
-              )}
+                {q.choices.map((c, cIdx) => (
+                  <div key={c.id} className="flex items-center gap-3">
+                    <Input
+                      className="flex-1"
+                      style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
+                      value={c.text}
+                      onChange={(e) => updateChoice(idx, cIdx, e.target.value)}
+                      placeholder={`Answer ${cIdx + 1}`}
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => removeChoice(idx, cIdx)}
+                      variant="ghost"
+                      className="text-[#C0C0C0] hover:text-white"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  onClick={() => addChoice(idx)}
+                  disabled={q.choices.length >= 4}
+                  className="w-full bg-[#9147FF] hover:bg-[#A86EFF]"
+                >
+                  + Add Answer
+                </Button>
+                {audioEnabled && (
+                  <div className="space-y-2">
+                    <FileDrop
+                      accept="audio/*"
+                      label={
+                        q.audioPromptKey
+                          ? `Question audio: ${q.audioPromptKey}`
+                          : 'Question audio'
+                      }
+                      playKey={q.audioPromptKey ?? undefined}
+                      onFile={(f) => handleAudio(idx, 'prompt', f)}
+                    />
+                    <FileDrop
+                      accept="audio/*"
+                      label={
+                        q.audioRevealKey
+                          ? `Reveal audio: ${q.audioRevealKey}`
+                          : 'Reveal audio'
+                      }
+                      playKey={q.audioRevealKey ?? undefined}
+                      onFile={(f) => handleAudio(idx, 'reveal', f)}
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           )
