@@ -3853,6 +3853,7 @@ export namespace Prisma {
     text: string | null
     audioPromptKey: string | null
     audioRevealKey: string | null
+    imageKey: string | null
     correctChoice: number | null
     order: number | null
   }
@@ -3863,6 +3864,7 @@ export namespace Prisma {
     text: string | null
     audioPromptKey: string | null
     audioRevealKey: string | null
+    imageKey: string | null
     correctChoice: number | null
     order: number | null
   }
@@ -3873,6 +3875,7 @@ export namespace Prisma {
     text: number
     audioPromptKey: number
     audioRevealKey: number
+    imageKey: number
     correctChoice: number
     order: number
     _all: number
@@ -3895,6 +3898,7 @@ export namespace Prisma {
     text?: true
     audioPromptKey?: true
     audioRevealKey?: true
+    imageKey?: true
     correctChoice?: true
     order?: true
   }
@@ -3905,6 +3909,7 @@ export namespace Prisma {
     text?: true
     audioPromptKey?: true
     audioRevealKey?: true
+    imageKey?: true
     correctChoice?: true
     order?: true
   }
@@ -3915,6 +3920,7 @@ export namespace Prisma {
     text?: true
     audioPromptKey?: true
     audioRevealKey?: true
+    imageKey?: true
     correctChoice?: true
     order?: true
     _all?: true
@@ -4012,6 +4018,7 @@ export namespace Prisma {
     text: string
     audioPromptKey: string | null
     audioRevealKey: string | null
+    imageKey: string | null
     correctChoice: number
     order: number
     _count: QuestionCountAggregateOutputType | null
@@ -4041,6 +4048,7 @@ export namespace Prisma {
     text?: boolean
     audioPromptKey?: boolean
     audioRevealKey?: boolean
+    imageKey?: boolean
     correctChoice?: boolean
     order?: boolean
     quiz?: boolean | QuizDefaultArgs<ExtArgs>
@@ -4055,6 +4063,7 @@ export namespace Prisma {
     text?: boolean
     audioPromptKey?: boolean
     audioRevealKey?: boolean
+    imageKey?: boolean
     correctChoice?: boolean
     order?: boolean
     quiz?: boolean | QuizDefaultArgs<ExtArgs>
@@ -4066,6 +4075,7 @@ export namespace Prisma {
     text?: boolean
     audioPromptKey?: boolean
     audioRevealKey?: boolean
+    imageKey?: boolean
     correctChoice?: boolean
     order?: boolean
     quiz?: boolean | QuizDefaultArgs<ExtArgs>
@@ -4077,11 +4087,12 @@ export namespace Prisma {
     text?: boolean
     audioPromptKey?: boolean
     audioRevealKey?: boolean
+    imageKey?: boolean
     correctChoice?: boolean
     order?: boolean
   }
 
-  export type QuestionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "quizId" | "text" | "audioPromptKey" | "audioRevealKey" | "correctChoice" | "order", ExtArgs["result"]["question"]>
+  export type QuestionOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "quizId" | "text" | "audioPromptKey" | "audioRevealKey" | "imageKey" | "correctChoice" | "order", ExtArgs["result"]["question"]>
   export type QuestionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     quiz?: boolean | QuizDefaultArgs<ExtArgs>
     choices?: boolean | Question$choicesArgs<ExtArgs>
@@ -4108,6 +4119,7 @@ export namespace Prisma {
       text: string
       audioPromptKey: string | null
       audioRevealKey: string | null
+      imageKey: string | null
       correctChoice: number
       order: number
     }, ExtArgs["result"]["question"]>
@@ -4541,6 +4553,7 @@ export namespace Prisma {
     readonly text: FieldRef<"Question", 'String'>
     readonly audioPromptKey: FieldRef<"Question", 'String'>
     readonly audioRevealKey: FieldRef<"Question", 'String'>
+    readonly imageKey: FieldRef<"Question", 'String'>
     readonly correctChoice: FieldRef<"Question", 'Int'>
     readonly order: FieldRef<"Question", 'Int'>
   }
@@ -9417,6 +9430,7 @@ export namespace Prisma {
     text: 'text',
     audioPromptKey: 'audioPromptKey',
     audioRevealKey: 'audioRevealKey',
+    imageKey: 'imageKey',
     correctChoice: 'correctChoice',
     order: 'order'
   };
@@ -9706,6 +9720,7 @@ export namespace Prisma {
     text?: StringFilter<"Question"> | string
     audioPromptKey?: StringNullableFilter<"Question"> | string | null
     audioRevealKey?: StringNullableFilter<"Question"> | string | null
+    imageKey?: StringNullableFilter<"Question"> | string | null
     correctChoice?: IntFilter<"Question"> | number
     order?: IntFilter<"Question"> | number
     quiz?: XOR<QuizScalarRelationFilter, QuizWhereInput>
@@ -9719,6 +9734,7 @@ export namespace Prisma {
     text?: SortOrder
     audioPromptKey?: SortOrderInput | SortOrder
     audioRevealKey?: SortOrderInput | SortOrder
+    imageKey?: SortOrderInput | SortOrder
     correctChoice?: SortOrder
     order?: SortOrder
     quiz?: QuizOrderByWithRelationInput
@@ -9735,6 +9751,7 @@ export namespace Prisma {
     text?: StringFilter<"Question"> | string
     audioPromptKey?: StringNullableFilter<"Question"> | string | null
     audioRevealKey?: StringNullableFilter<"Question"> | string | null
+    imageKey?: StringNullableFilter<"Question"> | string | null
     correctChoice?: IntFilter<"Question"> | number
     order?: IntFilter<"Question"> | number
     quiz?: XOR<QuizScalarRelationFilter, QuizWhereInput>
@@ -9748,6 +9765,7 @@ export namespace Prisma {
     text?: SortOrder
     audioPromptKey?: SortOrderInput | SortOrder
     audioRevealKey?: SortOrderInput | SortOrder
+    imageKey?: SortOrderInput | SortOrder
     correctChoice?: SortOrder
     order?: SortOrder
     _count?: QuestionCountOrderByAggregateInput
@@ -9766,6 +9784,7 @@ export namespace Prisma {
     text?: StringWithAggregatesFilter<"Question"> | string
     audioPromptKey?: StringNullableWithAggregatesFilter<"Question"> | string | null
     audioRevealKey?: StringNullableWithAggregatesFilter<"Question"> | string | null
+    imageKey?: StringNullableWithAggregatesFilter<"Question"> | string | null
     correctChoice?: IntWithAggregatesFilter<"Question"> | number
     order?: IntWithAggregatesFilter<"Question"> | number
   }
@@ -10151,6 +10170,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
     quiz: QuizCreateNestedOneWithoutQuestionsInput
@@ -10164,6 +10184,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
     choices?: ChoiceUncheckedCreateNestedManyWithoutQuestionInput
@@ -10175,6 +10196,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
     quiz?: QuizUpdateOneRequiredWithoutQuestionsNestedInput
@@ -10188,6 +10210,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
     choices?: ChoiceUncheckedUpdateManyWithoutQuestionNestedInput
@@ -10200,6 +10223,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
   }
@@ -10209,6 +10233,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
   }
@@ -10219,6 +10244,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
   }
@@ -10694,6 +10720,7 @@ export namespace Prisma {
     text?: SortOrder
     audioPromptKey?: SortOrder
     audioRevealKey?: SortOrder
+    imageKey?: SortOrder
     correctChoice?: SortOrder
     order?: SortOrder
   }
@@ -10709,6 +10736,7 @@ export namespace Prisma {
     text?: SortOrder
     audioPromptKey?: SortOrder
     audioRevealKey?: SortOrder
+    imageKey?: SortOrder
     correctChoice?: SortOrder
     order?: SortOrder
   }
@@ -10719,6 +10747,7 @@ export namespace Prisma {
     text?: SortOrder
     audioPromptKey?: SortOrder
     audioRevealKey?: SortOrder
+    imageKey?: SortOrder
     correctChoice?: SortOrder
     order?: SortOrder
   }
@@ -11569,6 +11598,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
     choices?: ChoiceCreateNestedManyWithoutQuestionInput
@@ -11580,6 +11610,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
     choices?: ChoiceUncheckedCreateNestedManyWithoutQuestionInput
@@ -11682,6 +11713,7 @@ export namespace Prisma {
     text?: StringFilter<"Question"> | string
     audioPromptKey?: StringNullableFilter<"Question"> | string | null
     audioRevealKey?: StringNullableFilter<"Question"> | string | null
+    imageKey?: StringNullableFilter<"Question"> | string | null
     correctChoice?: IntFilter<"Question"> | number
     order?: IntFilter<"Question"> | number
   }
@@ -11869,6 +11901,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
     quiz: QuizCreateNestedOneWithoutQuestionsInput
@@ -11881,6 +11914,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
     Answer?: AnswerUncheckedCreateNestedManyWithoutQuestionInput
@@ -11907,6 +11941,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
     quiz?: QuizUpdateOneRequiredWithoutQuestionsNestedInput
@@ -11919,6 +11954,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
     Answer?: AnswerUncheckedUpdateManyWithoutQuestionNestedInput
@@ -12107,6 +12143,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
     quiz: QuizCreateNestedOneWithoutQuestionsInput
@@ -12119,6 +12156,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
     choices?: ChoiceUncheckedCreateNestedManyWithoutQuestionInput
@@ -12166,6 +12204,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
     quiz?: QuizUpdateOneRequiredWithoutQuestionsNestedInput
@@ -12178,6 +12217,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
     choices?: ChoiceUncheckedUpdateManyWithoutQuestionNestedInput
@@ -12247,6 +12287,7 @@ export namespace Prisma {
     text: string
     audioPromptKey?: string | null
     audioRevealKey?: string | null
+    imageKey?: string | null
     correctChoice: number
     order: number
   }
@@ -12263,6 +12304,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
     choices?: ChoiceUpdateManyWithoutQuestionNestedInput
@@ -12274,6 +12316,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
     choices?: ChoiceUncheckedUpdateManyWithoutQuestionNestedInput
@@ -12285,6 +12328,7 @@ export namespace Prisma {
     text?: StringFieldUpdateOperationsInput | string
     audioPromptKey?: NullableStringFieldUpdateOperationsInput | string | null
     audioRevealKey?: NullableStringFieldUpdateOperationsInput | string | null
+    imageKey?: NullableStringFieldUpdateOperationsInput | string | null
     correctChoice?: IntFieldUpdateOperationsInput | number
     order?: IntFieldUpdateOperationsInput | number
   }

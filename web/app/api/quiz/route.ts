@@ -18,6 +18,7 @@ export async function POST(req: Request) {
           text: q.text,
           audioPromptKey: q.audioPromptKey,
           audioRevealKey: q.audioRevealKey,
+          imageKey: q.imageKey,
           correctChoice: q.correctChoice,
           order: idx,
           choices: {

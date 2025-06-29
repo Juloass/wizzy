@@ -1,4 +1,5 @@
 import { getAudioBlob, storeAudioBlob } from './audio'
+import { getImageBlob, storeImageBlob } from './image'
 import type { QuizPayload, QuestionPayload } from './types'
 
 export async function exportQuiz(quiz: QuizPayload & { id: string }) {
@@ -6,10 +7,12 @@ export async function exportQuiz(quiz: QuizPayload & { id: string }) {
     quiz.questions.map(async (q: QuestionPayload) => {
       const prompt = q.audioPromptKey && (await getAudioBlob(q.audioPromptKey));
       const reveal = q.audioRevealKey && (await getAudioBlob(q.audioRevealKey));
+      const img = q.imageKey && (await getImageBlob(q.imageKey));
       return {
         ...q,
         audioPrompt: prompt ? await blobToBase64(prompt) : undefined,
         audioReveal: reveal ? await blobToBase64(reveal) : undefined,
+        image: img ? await blobToBase64(img) : undefined,
       };
     })
   );
@@ -25,6 +28,8 @@ export async function importQuiz(json: string): Promise<QuizPayload & { id?: str
         audioReveal,
         audioPromptKey,
         audioRevealKey,
+        image,
+        imageKey,
         ...rest
       } = q;
       let promptKey = audioPromptKey ?? null;
@@ -37,7 +42,12 @@ export async function importQuiz(json: string): Promise<QuizPayload & { id?: str
         const blob = dataUrlToBlob(audioReveal);
         revealKey = await storeAudioBlob(blob);
       }
-      return { ...rest, audioPromptKey: promptKey, audioRevealKey: revealKey };
+      let imgKey = imageKey ?? null;
+      if (image && !imgKey) {
+        const blob = dataUrlToBlob(image);
+        imgKey = await storeImageBlob(blob);
+      }
+      return { ...rest, audioPromptKey: promptKey, audioRevealKey: revealKey, imageKey: imgKey };
     }),
   );
   return { ...data, questions };

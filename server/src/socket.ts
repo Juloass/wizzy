@@ -104,6 +104,7 @@ function handleStreamer(
         text: q.text,
         choices: q.choices.map((c) => ({ index: c.index, text: c.text })),
         audioPromptKey: q.audioPromptKey,
+        imageKey: q.imageKey,
       };
       io.to(payload.lobbyId).emit("question_started", qMsg);
 
@@ -177,6 +178,7 @@ function handleViewer(
           text: q.text,
           choices: q.choices.map((c) => ({ index: c.index, text: c.text })),
           audioPromptKey: q.audioPromptKey,
+          imageKey: q.imageKey,
           remaining,
         };
         socket.emit("question_started", qMsg);

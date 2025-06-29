@@ -46,6 +46,7 @@ model Question {
   text           String
   audioPromptKey String? // Clé/ID d’audio dans IndexedDB (ex: hash ou UUID)
   audioRevealKey String? // Clé de l’audio de reveal (optionnel)
+  imageKey       String? // Clé/ID d'image dans IndexedDB (optionnel)
   choices        Choice[]
   correctChoice  Int      // index dans `choices`
   order          Int
