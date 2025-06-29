@@ -1,88 +1,48 @@
 "use client"
 
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
+import * as PopoverPrimitive from "@radix-ui/react-popover"
+
 import { cn } from "@/lib/utils"
 
-interface PopoverContextProps {
-  open: boolean
-  setOpen: (v: boolean) => void
-  triggerRef: React.RefObject<HTMLButtonElement>
+function Popover({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
+  return <PopoverPrimitive.Root data-slot="popover" {...props} />
 }
 
-const PopoverContext = React.createContext<PopoverContextProps | null>(null)
+function PopoverTrigger({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
+  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
+}
 
-function Popover({ children }: { children: React.ReactNode }) {
-  const [open, setOpen] = React.useState(false)
-  const triggerRef = React.useRef<HTMLButtonElement>(null)
+function PopoverContent({
+  className,
+  align = "center",
+  sideOffset = 4,
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
   return (
-    <PopoverContext.Provider value={{ open, setOpen, triggerRef }}>
-      <div className="relative inline-block">{children}</div>
-    </PopoverContext.Provider>
+    <PopoverPrimitive.Portal>
+      <PopoverPrimitive.Content
+        data-slot="popover-content"
+        align={align}
+        sideOffset={sideOffset}
+        className={cn(
+          "bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden",
+          className
+        )}
+        {...props}
+      />
+    </PopoverPrimitive.Portal>
   )
 }
 
-const PopoverTrigger = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentPropsWithoutRef<"button"> & { asChild?: boolean }
->(function PopoverTrigger({ children, asChild = false, ...props }, ref) {
-  const ctx = React.useContext(PopoverContext)
-  if (!ctx) throw new Error("PopoverTrigger must be within Popover")
-  const Comp = asChild ? Slot : "button"
-  return (
-    <Comp
-      ref={(node: HTMLButtonElement | null) => {
-        ctx.triggerRef.current = node
-        if (typeof ref === "function") ref(node)
-        else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node
-      }}
-      onClick={() => ctx.setOpen(!ctx.open)}
-      {...props}
-    >
-      {children}
-    </Comp>
-  )
-})
+function PopoverAnchor({
+  ...props
+}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
+  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
+}
 
-const PopoverContent = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentPropsWithoutRef<"div"> & { align?: "start" | "center" | "end" }
->(function PopoverContent({ className, align = "center", ...props }, ref) {
-  const ctx = React.useContext(PopoverContext)
-  if (!ctx) throw new Error("PopoverContent must be within Popover")
-  const [styles, setStyles] = React.useState<React.CSSProperties>({})
-  React.useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (
-        ctx.triggerRef.current &&
-        !ctx.triggerRef.current.contains(e.target as Node) &&
-        !(ref && (ref as React.MutableRefObject<HTMLDivElement | null>).current?.contains(e.target as Node))
-      ) {
-        ctx.setOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClick)
-    const rect = ctx.triggerRef.current?.getBoundingClientRect()
-    if (rect) {
-      let left = rect.left
-      if (align === "center") left = rect.left + rect.width / 2
-      if (align === "end") left = rect.right
-      setStyles({ position: "absolute", top: rect.bottom + 4, left })
-    }
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [ctx, align, ref])
-  if (!ctx.open) return null
-  return (
-    <div
-      ref={ref}
-      style={styles}
-      className={cn(
-        "z-50 w-72 -translate-x-1/2 rounded-md border bg-popover p-4 text-popover-foreground shadow-md",
-        className,
-      )}
-      {...props}
-    />
-  )
-})
-
-export { Popover, PopoverTrigger, PopoverContent }
+export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }
