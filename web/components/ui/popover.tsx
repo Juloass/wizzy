@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
 import { cn } from "@/lib/utils"
 
 interface PopoverContextProps {
@@ -23,13 +24,14 @@ function Popover({ children }: { children: React.ReactNode }) {
 
 const PopoverTrigger = React.forwardRef<
   HTMLButtonElement,
-  React.ComponentPropsWithoutRef<"button">
->(function PopoverTrigger({ children, ...props }, ref) {
+  React.ComponentPropsWithoutRef<"button"> & { asChild?: boolean }
+>(function PopoverTrigger({ children, asChild = false, ...props }, ref) {
   const ctx = React.useContext(PopoverContext)
   if (!ctx) throw new Error("PopoverTrigger must be within Popover")
+  const Comp = asChild ? Slot : "button"
   return (
-    <button
-      ref={(node) => {
+    <Comp
+      ref={(node: HTMLButtonElement | null) => {
         ctx.triggerRef.current = node
         if (typeof ref === "function") ref(node)
         else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = node
@@ -38,7 +40,7 @@ const PopoverTrigger = React.forwardRef<
       {...props}
     >
       {children}
-    </button>
+    </Comp>
   )
 })
 

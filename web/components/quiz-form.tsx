@@ -133,7 +133,7 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
         }))
       )
       toast.success('Imported quiz')
-    } catch (e) {
+    } catch {
       toast.error('Failed to import')
     }
   }
@@ -142,8 +142,8 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
     exportQuiz({
       name,
       description,
-      questions: questions.map((q) => {
-        const { audioEnabled: _, ...rest } = q
+      questions: questions.map(({ audioEnabled, ...rest }) => {
+        void audioEnabled
         return rest
       }),
     })
@@ -154,8 +154,8 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
     const payload = {
       name,
       description,
-      questions: questions.map((q) => {
-        const { audioEnabled: _, ...rest } = q
+      questions: questions.map(({ audioEnabled, ...rest }) => {
+        void audioEnabled
         return rest
       }),
     }

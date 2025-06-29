@@ -43,8 +43,8 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="dark">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased pt-20`}>
-        <header className="fixed top-0 left-0 z-50 w-full bg-gradient-to-b from-black/70 to-transparent">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <header className="w-full bg-gradient-to-b from-black/70 to-transparent">
           <div className="max-w-screen-xl mx-auto flex items-center justify-between py-6 px-8">
             <Link href="/" className="flex items-center gap-2 font-bold text-white">
               <span role="img" aria-label="wizard">🧙‍♂️</span>
