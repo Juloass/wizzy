@@ -1,196 +1,190 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Switch } from '@/components/ui/switch'
-import { FileDrop } from '@/components/ui/file-drop'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-} from '@/components/ui/dialog'
-import { Trash2, Settings } from 'lucide-react'
-import { Inter } from 'next/font/google'
-import { cn } from '@/lib/utils'
-import { storeAudioBlob } from '@/lib/audio'
-import { toast } from '@/components/ui/sonner'
-import { exportQuiz, importQuiz } from '@/lib/quizIO'
-import type { QuizPayload, QuestionPayload } from '@/lib/types'
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { FileDrop } from "@/components/ui/file-drop";
+import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/sonner";
+import { Switch } from "@/components/ui/switch";
+import { storeAudioBlob } from "@/lib/audio";
+import { exportQuiz, importQuiz } from "@/lib/quizIO";
+import type { QuestionPayload, QuizPayload } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { Settings, Trash2 } from "lucide-react";
+import { Inter } from "next/font/google";
+import { useState } from "react";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
 
 interface QuestionForm extends QuestionPayload {
-  audioEnabled?: boolean
+  audioEnabled?: boolean;
 }
 
-export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } }) {
-  const [name, setName] = useState(quiz.name || '')
-  const [description, setDescription] = useState(quiz.description || '')
+export default function QuizForm({
+  quiz,
+}: {
+  quiz: QuizPayload & { id: string };
+}) {
+  const [name, setName] = useState(quiz.name || "");
+  const [description, setDescription] = useState(quiz.description || "");
   const [questions, setQuestions] = useState<QuestionForm[]>(
     (quiz.questions || []).map((q) => ({
       ...q,
       audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
     }))
-  )
-  const [errors, setErrors] = useState<string[]>([])
-  const [tab, setTab] = useState<string>(quiz.questions?.[0]?.id || 'add')
+  );
+  const [errors, setErrors] = useState<string[]>([]);
+  const [tab, setTab] = useState<string>(quiz.questions?.[0]?.id || "add");
 
   const handleAddQuestion = () => {
-    const id = crypto.randomUUID()
+    const id = crypto.randomUUID();
     setQuestions([
       ...questions,
       {
         id,
-        text: '',
+        text: "",
         choices: [],
         correctChoice: 0,
         audioEnabled: false,
         order: questions.length,
       },
-    ])
-    setTab(id)
-  }
+    ]);
+    setTab(id);
+  };
 
   const addChoice = (qIdx: number) => {
-    const copy = [...questions]
-    if (copy[qIdx].choices.length >= 4) return
+    const copy = [...questions];
+    if (copy[qIdx].choices.length >= 4) return;
     copy[qIdx].choices.push({
       id: crypto.randomUUID(),
-      text: '',
+      text: "",
       index: copy[qIdx].choices.length,
-    })
-    setQuestions(copy)
-  }
+    });
+    setQuestions(copy);
+  };
 
   const updateChoice = (qIdx: number, cIdx: number, text: string) => {
-    const copy = [...questions]
-    copy[qIdx].choices[cIdx].text = text
-    setQuestions(copy)
-  }
+    const copy = [...questions];
+    copy[qIdx].choices[cIdx].text = text;
+    setQuestions(copy);
+  };
 
   const removeChoice = (qIdx: number, cIdx: number) => {
-    const copy = [...questions]
-    copy[qIdx].choices.splice(cIdx, 1)
-    setQuestions(copy)
-  }
+    const copy = [...questions];
+    copy[qIdx].choices.splice(cIdx, 1);
+    setQuestions(copy);
+  };
 
   const updateQuestionText = (idx: number, text: string) => {
-    const copy = [...questions]
-    copy[idx].text = text
-    setQuestions(copy)
-  }
+    const copy = [...questions];
+    copy[idx].text = text;
+    setQuestions(copy);
+  };
 
   const handleAudio = async (
     idx: number,
-    type: 'prompt' | 'reveal',
-    file: File | null,
+    type: "prompt" | "reveal",
+    file: File | null
   ) => {
-    if (!file) return
-    const key = await storeAudioBlob(file)
-    const copy = [...questions]
-    if (type === 'prompt') copy[idx].audioPromptKey = key
-    else copy[idx].audioRevealKey = key
-    copy[idx].audioEnabled = true
-    setQuestions(copy)
-  }
+    if (!file) return;
+    const key = await storeAudioBlob(file);
+    const copy = [...questions];
+    if (type === "prompt") copy[idx].audioPromptKey = key;
+    else copy[idx].audioRevealKey = key;
+    copy[idx].audioEnabled = true;
+    setQuestions(copy);
+  };
 
   const toggleAudio = (idx: number, enabled: boolean) => {
-    const copy = [...questions]
+    const copy = [...questions];
     if (!enabled) {
-      copy[idx].audioPromptKey = null
-      copy[idx].audioRevealKey = null
+      copy[idx].audioPromptKey = null;
+      copy[idx].audioRevealKey = null;
     }
-    copy[idx].audioEnabled = enabled
-    setQuestions(copy)
-  }
+    copy[idx].audioEnabled = enabled;
+    setQuestions(copy);
+  };
 
   const validate = () => {
-    const errs: string[] = []
-    if (!name.trim()) errs.push('Quiz name required')
-    if (questions.length === 0) errs.push('At least one question')
+    const errs: string[] = [];
+    if (!name.trim()) errs.push("Quiz name required");
+    if (questions.length === 0) errs.push("At least one question");
     questions.forEach((q, i) => {
       if (q.choices.length < 2 || q.choices.length > 4) {
-        errs.push(`Question ${i + 1} must have 2–4 choices`)
+        errs.push(`Question ${i + 1} must have 2–4 choices`);
       }
-    })
-    setErrors(errs)
-    return errs.length === 0
-  }
+    });
+    setErrors(errs);
+    return errs.length === 0;
+  };
 
   const handleImport = async (file: File | null) => {
-    if (!file) return
+    if (!file) return;
     try {
-      const data = await importQuiz(file)
-      setName(data.name || '')
-      setDescription(data.description || '')
+      const data = await importQuiz(file);
+      setName(data.name || "");
+      setDescription(data.description || "");
       setQuestions(
         (data.questions || []).map((q) => ({
           ...q,
           audioEnabled: Boolean(q.audioPromptKey || q.audioRevealKey),
         }))
-      )
-      toast.success('Imported quiz')
+      );
+      toast.success("Imported quiz");
     } catch {
-      toast.error('Failed to import')
+      toast.error("Failed to import");
     }
-  }
+  };
 
   const handleExport = () => {
     exportQuiz({
       name,
       description,
       questions: questions.map(({ audioEnabled, ...rest }) => {
-        void audioEnabled
-        return rest
+        void audioEnabled;
+        return rest;
       }),
-    })
-  }
+    });
+  };
 
   const onSubmit = async () => {
-    if (!validate()) return
+    if (!validate()) return;
     const payload = {
       name,
       description,
       questions: questions.map(({ audioEnabled, ...rest }) => {
-        void audioEnabled
-        return rest
+        void audioEnabled;
+        return rest;
       }),
-    }
-    const res = await fetch(quiz.id ? `/api/quiz/${quiz.id}` : '/api/quiz', {
-      method: quiz.id ? 'PUT' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    };
+    const res = await fetch(quiz.id ? `/api/quiz/${quiz.id}` : "/api/quiz", {
+      method: quiz.id ? "PUT" : "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
-    })
+    });
     if (res.ok) {
-      window.location.href = '/dashboard'
+      window.location.href = "/dashboard";
     } else {
-      const msg = await res.text()
-      setErrors([msg || 'Failed to save'])
-      toast.error(msg || 'Failed to save')
+      const msg = await res.text();
+      setErrors([msg || "Failed to save"]);
+      toast.error(msg || "Failed to save");
     }
-  }
+  };
 
   return (
     <div
-      className={cn(
-        'flex min-h-screen text-white',
-        inter.className,
-      )}
-      style={{ backgroundColor: '#0E0E12' }}
+      className={cn("flex flex-1 overflow-hidden text-white", inter.className)}
+      style={{ backgroundColor: "#0E0E12" }}
     >
       <aside
-        className="w-[300px] flex flex-col p-6 space-y-6"
-        style={{ backgroundColor: '#15151A' }}
+        className="w-[300px] flex flex-col p-6 space-y-6 "
+        style={{ backgroundColor: "#15151A" }}
       >
-        <div className="flex items-center gap-2 text-xl font-bold">
-          <span role="img" aria-label="wizard">🧙‍♂️</span>
+        <div className="flex items-center gap-2 text-xl font-bold ">
+          <span role="img" aria-label="wizard">
+            🧙‍♂️
+          </span>
           <span>Wizzy</span>
         </div>
         <Button
@@ -200,18 +194,23 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
         >
           + Add Question
         </Button>
-        <div className="flex flex-col gap-2 overflow-y-auto pr-2">
+        <div
+          className="flex flex-col gap-2 overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2
+    [&::-webkit-scrollbar-track]:bg-transparent
+    [&::-webkit-scrollbar-thumb]:bg-white/20
+    [&::-webkit-scrollbar-thumb]:rounded-full"
+        >
           {questions.map((q, idx) => (
             <Button
               key={q.id}
               variant="ghost"
               onClick={() => setTab(q.id)}
               className={cn(
-                'justify-start',
-                'px-4',
+                "justify-start",
+                "px-4",
                 tab === q.id
-                  ? 'border border-[#9147FF] bg-[#9147FF]/20 text-white'
-                  : 'bg-[#202026] text-[#C0C0C0] hover:bg-[#23232A]'
+                  ? "border border-[#9147FF] bg-[#9147FF]/20 text-white"
+                  : "bg-[#202026] text-[#C0C0C0] hover:bg-[#23232A]"
               )}
             >
               Question {idx + 1}
@@ -219,12 +218,17 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
           ))}
         </div>
       </aside>
-      <main className="flex-1 overflow-y-auto p-8 space-y-8">
+      <main
+        className="flex-1 overflow-y-auto p-8 space-y-8 [&::-webkit-scrollbar]:w-2
+    [&::-webkit-scrollbar-track]:bg-transparent
+    [&::-webkit-scrollbar-thumb]:bg-white/20
+    [&::-webkit-scrollbar-thumb]:rounded-full"
+      >
         <div
           className="flex items-center justify-between rounded-lg p-6 shadow"
-          style={{ backgroundColor: '#15151A' }}
+          style={{ backgroundColor: "#15151A" }}
         >
-          <h2 className="text-2xl font-semibold">{name || 'Quiz Name'}</h2>
+          <h2 className="text-2xl font-semibold">{name || "Quiz Name"}</h2>
           <Dialog>
             <DialogTrigger asChild>
               <Button
@@ -245,7 +249,10 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Quiz name"
-                    style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
+                    style={{
+                      backgroundColor: "#202026",
+                      borderColor: "#2A2A33",
+                    }}
                   />
                   <textarea
                     value={description}
@@ -253,19 +260,26 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                     placeholder="Description"
                     rows={3}
                     className="w-full rounded-md border px-3 py-2 text-sm"
-                    style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
+                    style={{
+                      backgroundColor: "#202026",
+                      borderColor: "#2A2A33",
+                    }}
                   />
                   <div className="flex items-center gap-2">
                     <Input
                       type="file"
                       accept="application/json"
                       onChange={(e) => {
-                        handleImport(e.target.files?.[0] || null)
-                        e.target.value = ''
+                        handleImport(e.target.files?.[0] || null);
+                        e.target.value = "";
                       }}
                       className="flex-1 bg-[#202026] border-[#2A2A33]"
                     />
-                    <Button type="button" onClick={handleExport} className="shrink-0">
+                    <Button
+                      type="button"
+                      onClick={handleExport}
+                      className="shrink-0"
+                    >
                       Export
                     </Button>
                   </div>
@@ -275,16 +289,21 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
           </Dialog>
         </div>
         {questions.map((q, idx) => {
-          const audioEnabled = q.audioEnabled ?? Boolean(q.audioPromptKey || q.audioRevealKey)
-          if (q.id !== tab) return null
+          const audioEnabled =
+            q.audioEnabled ?? Boolean(q.audioPromptKey || q.audioRevealKey);
+          if (q.id !== tab) return null;
           return (
-            <Card key={q.id} className="shadow" style={{ backgroundColor: '#15151A' }}>
+            <Card
+              key={q.id}
+              className="shadow"
+              style={{ backgroundColor: "#15151A" }}
+            >
               <CardContent className="space-y-6">
                 <Input
                   value={q.text}
                   onChange={(e) => updateQuestionText(idx, e.target.value)}
                   placeholder="Question text"
-                  style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
+                  style={{ backgroundColor: "#202026", borderColor: "#2A2A33" }}
                 />
                 <label className="flex items-center gap-3 text-[#C0C0C0]">
                   <Switch
@@ -298,7 +317,10 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                   <div key={c.id} className="flex items-center gap-3">
                     <Input
                       className="flex-1"
-                      style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
+                      style={{
+                        backgroundColor: "#202026",
+                        borderColor: "#2A2A33",
+                      }}
                       value={c.text}
                       onChange={(e) => updateChoice(idx, cIdx, e.target.value)}
                       placeholder={`Answer ${cIdx + 1}`}
@@ -328,10 +350,10 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                       label={
                         q.audioPromptKey
                           ? `Question audio: ${q.audioPromptKey}`
-                          : 'Question audio'
+                          : "Question audio"
                       }
                       playKey={q.audioPromptKey ?? undefined}
-                      onFile={(f) => handleAudio(idx, 'prompt', f)}
+                      onFile={(f) => handleAudio(idx, "prompt", f)}
                       className="bg-[#202026] border-[#2A2A33]"
                     />
                     <FileDrop
@@ -339,17 +361,17 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                       label={
                         q.audioRevealKey
                           ? `Reveal audio: ${q.audioRevealKey}`
-                          : 'Reveal audio'
+                          : "Reveal audio"
                       }
                       playKey={q.audioRevealKey ?? undefined}
-                      onFile={(f) => handleAudio(idx, 'reveal', f)}
+                      onFile={(f) => handleAudio(idx, "reveal", f)}
                       className="bg-[#202026] border-[#2A2A33]"
                     />
                   </div>
                 )}
               </CardContent>
             </Card>
-          )
+          );
         })}
         {errors.length > 0 && (
           <div className="space-y-1 rounded-md border border-destructive p-4 text-destructive">
@@ -363,5 +385,5 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
         </Button>
       </main>
     </div>
-  )
+  );
 }
