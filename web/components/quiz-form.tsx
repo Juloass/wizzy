@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { FileDrop } from "@/components/ui/file-drop";
+import { FileInput } from "@/components/ui/file-input";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
@@ -267,13 +268,10 @@ export default function QuizForm({
                     }}
                   />
                   <div className="flex items-center gap-2">
-                    <Input
-                      type="file"
+                    <FileInput
                       accept="application/json"
-                      onChange={(e) => {
-                        handleImport(e.target.files?.[0] || null);
-                        e.target.value = "";
-                      }}
+                      onFile={handleImport}
+                      label="Import Quiz"
                       className="flex-1 bg-[#202026] border-[#2A2A33]"
                     />
                     <Button
