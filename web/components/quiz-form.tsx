@@ -11,7 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+} from '@/components/ui/dialog'
 import { Trash2, Settings } from 'lucide-react'
 import { Inter } from 'next/font/google'
 import { cn } from '@/lib/utils'
@@ -221,13 +225,17 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
           style={{ backgroundColor: '#15151A' }}
         >
           <h2 className="text-2xl font-semibold">{name || 'Quiz Name'}</h2>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-xl">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-xl bg-muted hover:bg-muted/70"
+              >
                 <Settings className="size-5" />
               </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="p-0">
+            </DialogTrigger>
+            <DialogContent className="p-0 bg-[#15151A] text-white border-none">
               <Card className="bg-[#15151A] text-white border-none shadow">
                 <CardHeader>
                   <CardTitle>Quiz Settings</CardTitle>
@@ -247,20 +255,24 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                     className="w-full rounded-md border px-3 py-2 text-sm"
                     style={{ backgroundColor: '#202026', borderColor: '#2A2A33' }}
                   />
-                  <div className="space-y-2">
-                    <input
+                  <div className="flex items-center gap-2">
+                    <Input
                       type="file"
                       accept="application/json"
-                      onChange={(e) => handleImport(e.target.files?.[0] || null)}
+                      onChange={(e) => {
+                        handleImport(e.target.files?.[0] || null)
+                        e.target.value = ''
+                      }}
+                      className="flex-1 bg-[#202026] border-[#2A2A33]"
                     />
-                    <Button type="button" onClick={handleExport} className="w-full">
+                    <Button type="button" onClick={handleExport} className="shrink-0">
                       Export
                     </Button>
                   </div>
                 </CardContent>
               </Card>
-            </PopoverContent>
-          </Popover>
+            </DialogContent>
+          </Dialog>
         </div>
         {questions.map((q, idx) => {
           const audioEnabled = q.audioEnabled ?? Boolean(q.audioPromptKey || q.audioRevealKey)
@@ -320,6 +332,7 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                       }
                       playKey={q.audioPromptKey ?? undefined}
                       onFile={(f) => handleAudio(idx, 'prompt', f)}
+                      className="bg-[#202026] border-[#2A2A33]"
                     />
                     <FileDrop
                       accept="audio/*"
@@ -330,6 +343,7 @@ export default function QuizForm({ quiz }: { quiz: QuizPayload & { id: string } 
                       }
                       playKey={q.audioRevealKey ?? undefined}
                       onFile={(f) => handleAudio(idx, 'reveal', f)}
+                      className="bg-[#202026] border-[#2A2A33]"
                     />
                   </div>
                 )}

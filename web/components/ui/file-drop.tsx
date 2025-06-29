@@ -17,6 +17,8 @@ export function FileDrop({ onFile, label = "Drop or click", playKey, className, 
   const [playing, setPlaying] = React.useState(false)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onFile(e.target.files?.[0] || null)
+    // allow re-selecting the same file later
+    e.target.value = ""
   }
   const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault()
@@ -69,7 +71,7 @@ export function FileDrop({ onFile, label = "Drop or click", playKey, className, 
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
       className={cn(
-        "relative flex h-24 cursor-pointer items-center justify-center rounded-md border border-dashed p-2 text-sm",
+        "relative flex h-24 cursor-pointer items-center justify-center rounded-md border border-dashed p-2 text-sm bg-[#202026] border-[#2A2A33]",
         className,
       )}
     >
