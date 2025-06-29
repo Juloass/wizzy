@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 
 let currentAudio: HTMLAudioElement | null = null
 let currentKey: string | null = null
+let currentSetter: React.Dispatch<React.SetStateAction<boolean>> | null = null
 
 interface FileDropProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "onChange" | "type"> {
   onFile: (file: File | null) => void
@@ -24,9 +25,9 @@ export function FileDrop({ onFile, label = "Drop or click", playKey, className, 
     e.preventDefault()
     onFile(e.dataTransfer.files?.[0] || null)
   }
-  const handleClick = () => inputRef.current?.click()
   const play = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
+    e.preventDefault()
     if (!playKey) return
 
     if (currentAudio && currentKey === playKey) {
@@ -35,15 +36,18 @@ export function FileDrop({ onFile, label = "Drop or click", playKey, className, 
         setPlaying(false)
         currentAudio = null
         currentKey = null
+        currentSetter = null
       } else {
         currentAudio.play()
         setPlaying(true)
+        currentSetter = setPlaying
       }
       return
     }
 
     if (currentAudio) {
       currentAudio.pause()
+      currentSetter?.(false)
     }
 
     const { getAudioBlob } = await import("@/lib/audio")
@@ -53,6 +57,7 @@ export function FileDrop({ onFile, label = "Drop or click", playKey, className, 
     const audio = new Audio(url)
     currentAudio = audio
     currentKey = playKey
+    currentSetter = setPlaying
     setPlaying(true)
     audio.play()
     audio.addEventListener("ended", () => {
@@ -61,13 +66,13 @@ export function FileDrop({ onFile, label = "Drop or click", playKey, className, 
       if (currentAudio === audio) {
         currentAudio = null
         currentKey = null
+        currentSetter = null
       }
     })
   }
 
   return (
     <label
-      onClick={handleClick}
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()}
       className={cn(
