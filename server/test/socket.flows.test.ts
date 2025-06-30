@@ -53,7 +53,7 @@ vi.mock("../src/lib/prisma", () => {
   };
 });
 
-const testEnv = { NODE_ENV: "development" };
+const testEnv = { NODE_ENV: "development", QUIZ_COUNTDOWN_MS: "0" };
 
 function once<T>(socket: any, event: string) {
   return new Promise<T>((resolve) => socket.once(event, resolve));

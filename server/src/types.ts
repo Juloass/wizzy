@@ -33,6 +33,7 @@ export interface LobbyState {
   answers: Map<string, Map<string, number>>;
   questionStartedAt?: number;
   questionTimer?: NodeJS.Timeout;
+  countdownTimer?: NodeJS.Timeout;
   reconnectTimer?: NodeJS.Timeout;
 }
 
