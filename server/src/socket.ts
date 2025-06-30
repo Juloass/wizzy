@@ -73,6 +73,10 @@ function handleStreamer(
 ) {
   const userId = socket.data.userId as string;
 
+  const COUNTDOWN_MS = process.env.QUIZ_COUNTDOWN_MS
+    ? Number(process.env.QUIZ_COUNTDOWN_MS)
+    : 10000;
+
   lobbyManager.handleHostReconnect(userId, socket.id);
 
   socket.on(
@@ -97,21 +101,35 @@ function handleStreamer(
 
   socket.on("start_question", async (payload: StartQuestionPayload) => {
     try {
-      const q = lobbyManager.startQuestion(payload.lobbyId);
       const lobby = lobbyManager.getLobby(payload.lobbyId)!;
-      const qMsg: QuestionStartedPayload = {
-        id: q.id,
-        text: q.text,
-        choices: q.choices.map((c) => ({ index: c.index, text: c.text })),
-        audioPromptKey: q.audioPromptKey,
-        imageKey: q.imageKey,
-      };
-      io.to(payload.lobbyId).emit("question_started", qMsg);
+      if (lobby.countdownTimer) {
+        clearTimeout(lobby.countdownTimer);
+      }
+      if (COUNTDOWN_MS > 0) {
+        io.to(payload.lobbyId).emit("question_countdown", { duration: COUNTDOWN_MS / 1000 });
+      }
+      const startFn = () => {
+        lobby.countdownTimer = undefined;
+        const q = lobbyManager.startQuestion(payload.lobbyId);
+        const qMsg: QuestionStartedPayload = {
+          id: q.id,
+          text: q.text,
+          choices: q.choices.map((c) => ({ index: c.index, text: c.text })),
+          audioPromptKey: q.audioPromptKey,
+          imageKey: q.imageKey,
+        };
+        io.to(payload.lobbyId).emit("question_started", qMsg);
 
-      lobby.questionTimer = setTimeout(() => {
-        const result = lobbyManager.revealAnswer(payload.lobbyId);
-        broadcastQuestionResults(io, lobby, result);
-      }, lobby.config.questionDuration * 1000);
+        lobby.questionTimer = setTimeout(() => {
+          const result = lobbyManager.revealAnswer(payload.lobbyId);
+          broadcastQuestionResults(io, lobby, result);
+        }, lobby.config.questionDuration * 1000);
+      };
+      if (COUNTDOWN_MS > 0) {
+        lobby.countdownTimer = setTimeout(startFn, COUNTDOWN_MS);
+      } else {
+        startFn();
+      }
     } catch (err) {
       const errMsg: ErrorPayload = { message: (err as Error).message };
       socket.emit("error", errMsg);
@@ -121,6 +139,10 @@ function handleStreamer(
   socket.on("reveal_answer", (payload: StartQuestionPayload) => {
     try {
       const lobby = lobbyManager.getLobby(payload.lobbyId)!;
+      if (lobby.countdownTimer) {
+        clearTimeout(lobby.countdownTimer);
+        lobby.countdownTimer = undefined;
+      }
       const result = lobbyManager.revealAnswer(payload.lobbyId);
       broadcastQuestionResults(io, lobby, result);
     } catch (err) {
@@ -131,6 +153,11 @@ function handleStreamer(
 
   socket.on("end_quiz", async (payload: EndQuizPayload) => {
     try {
+      const lobby = lobbyManager.getLobby(payload.lobbyId);
+      if (lobby?.countdownTimer) {
+        clearTimeout(lobby.countdownTimer);
+        lobby.countdownTimer = undefined;
+      }
       const results = await lobbyManager.endQuiz(payload.lobbyId);
       const msg: QuizEndedPayload = { results };
       io.to(payload.lobbyId).emit("quiz_ended", msg);
@@ -166,6 +193,17 @@ function handleViewer(
       socket.join(payload.lobbyId);
       const msg: LobbyJoinedPayload = { lobbyId: payload.lobbyId };
       socket.emit("lobby_joined", msg);
+
+      const hostId = lobby.hostSocketId;
+      if (hostId) {
+        io.to(hostId).emit("join", {
+          player: {
+            id: auth.id,
+            displayName: auth.displayName,
+            imageUrl: auth.profileImageUrl,
+          },
+        });
+      }
 
       const lobbyState = lobbyManager.getLobby(payload.lobbyId);
       if (lobbyState && lobbyState.currentQuestion >= 0 && lobbyState.questionStartedAt) {
