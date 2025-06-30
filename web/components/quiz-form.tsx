@@ -18,7 +18,13 @@ import { storeImageBlob, getImageBlob } from "@/lib/image";
 import { exportQuiz, importQuiz } from "@/lib/quizIO";
 import type { QuestionPayload, QuizPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { Settings, Trash2 } from "lucide-react";
+import { Settings, Trash2, CheckCircle } from "lucide-react";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  type DropResult,
+} from "@hello-pangea/dnd";
 import { Inter } from "next/font/google";
 import { useState, useEffect } from "react";
 
@@ -122,6 +128,12 @@ export default function QuizForm({
     setQuestions(copy);
   };
 
+  const setCorrectChoice = (qIdx: number, cIdx: number) => {
+    const copy = [...questions];
+    copy[qIdx].correctChoice = cIdx;
+    setQuestions(copy);
+  };
+
   const updateChoice = (qIdx: number, cIdx: number, text: string) => {
     const copy = [...questions];
     copy[qIdx].choices[cIdx].text = text;
@@ -131,6 +143,12 @@ export default function QuizForm({
   const removeChoice = (qIdx: number, cIdx: number) => {
     const copy = [...questions];
     copy[qIdx].choices.splice(cIdx, 1);
+    copy[qIdx].choices.forEach((c, i) => {
+      c.index = i;
+    });
+    if (copy[qIdx].correctChoice >= copy[qIdx].choices.length) {
+      copy[qIdx].correctChoice = 0;
+    }
     setQuestions(copy);
   };
 
@@ -179,6 +197,31 @@ export default function QuizForm({
       copy[idx].imageKey = null;
     }
     copy[idx].imageEnabled = enabled;
+    setQuestions(copy);
+  };
+
+  const removeQuestion = (idx: number) => {
+    const copy = [...questions];
+    const removed = copy.splice(idx, 1);
+    void removed;
+    copy.forEach((q, i) => {
+      q.order = i;
+    });
+    setQuestions(copy);
+    if (copy.length === 0) setTab("add");
+    else if (tab === questions[idx]?.id) {
+      setTab(copy[Math.min(idx, copy.length - 1)].id);
+    }
+  };
+
+  const handleDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const copy = Array.from(questions);
+    const [moved] = copy.splice(result.source.index, 1);
+    copy.splice(result.destination.index, 0, moved);
+    copy.forEach((q, i) => {
+      q.order = i;
+    });
     setQuestions(copy);
   };
 
@@ -267,30 +310,41 @@ export default function QuizForm({
         >
           + Add Question
         </Button>
-        <div
-          className="flex flex-col gap-2 overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2
-    [&::-webkit-scrollbar-track]:bg-transparent
-    [&::-webkit-scrollbar-thumb]:bg-white/20
-    [&::-webkit-scrollbar-thumb]:rounded-full"
-        >
-          {questions.map((q, idx) => (
-            <Button
-              key={q.id}
-              variant="ghost"
-              onClick={() => setTab(q.id)}
-              className={cn(
-                "justify-start",
-                "px-4",
-                "cursor-pointer",
-                tab === q.id
-                  ? "border border-[#9147FF] bg-[#9147FF]/20 text-white"
-                  : "bg-[#202026] text-[#C0C0C0] hover:bg-[#23232A]"
-              )}
-            >
-              Question {idx + 1}
-            </Button>
-          ))}
-        </div>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="questions">
+            {(p) => (
+              <div
+                ref={p.innerRef}
+                {...p.droppableProps}
+                className="flex flex-col gap-2 overflow-y-auto pr-2 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full"
+              >
+                {questions.map((q, idx) => (
+                  <Draggable draggableId={q.id} index={idx} key={q.id}>
+                    {(dp) => (
+                      <div ref={dp.innerRef} {...dp.draggableProps} {...dp.dragHandleProps}>
+                        <Button
+                          variant="ghost"
+                          onClick={() => setTab(q.id)}
+                          className={cn(
+                            "justify-start",
+                            "px-4",
+                            "cursor-pointer",
+                            tab === q.id
+                              ? "border border-[#9147FF] bg-[#9147FF]/20 text-white"
+                              : "bg-[#202026] text-[#C0C0C0] hover:bg-[#23232A]"
+                          )}
+                        >
+                          Question {idx + 1}
+                        </Button>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {p.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </aside>
       <main
         className="flex-1 overflow-y-auto p-8 space-y-8 [&::-webkit-scrollbar]:w-2
@@ -372,12 +426,23 @@ export default function QuizForm({
               style={{ backgroundColor: "#15151A" }}
             >
               <CardContent className="space-y-6">
-                <Input
-                  value={q.text}
-                  onChange={(e) => updateQuestionText(idx, e.target.value)}
-                  placeholder="Question text"
-                  style={{ backgroundColor: "#202026", borderColor: "#2A2A33" }}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={q.text}
+                    onChange={(e) => updateQuestionText(idx, e.target.value)}
+                    placeholder="Question text"
+                    style={{ backgroundColor: "#202026", borderColor: "#2A2A33" }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    onClick={() => removeQuestion(idx)}
+                    variant="ghost"
+                    className="text-[#C0C0C0] hover:text-white"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
                 <label className="flex items-center gap-3 text-[#C0C0C0]">
                   <Switch
                     checked={imageEnabled}
@@ -412,6 +477,17 @@ export default function QuizForm({
                       onChange={(e) => updateChoice(idx, cIdx, e.target.value)}
                       placeholder={`Answer ${cIdx + 1}`}
                     />
+                    <Button
+                      type="button"
+                      onClick={() => setCorrectChoice(idx, cIdx)}
+                      variant="ghost"
+                      className={cn(
+                        "text-[#C0C0C0] hover:text-white",
+                        q.correctChoice === cIdx && "text-green-500"
+                      )}
+                    >
+                      <CheckCircle className="size-4" />
+                    </Button>
                     <Button
                       type="button"
                       onClick={() => removeChoice(idx, cIdx)}
