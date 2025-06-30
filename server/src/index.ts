@@ -19,7 +19,11 @@ export function createApp(): {
   const httpServer = createServer(app);
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: ["https://*.twitch.tv", "https://*.twitchcdn.net", "*"],
+      origin: [
+        "https://*.twitch.tv",
+        "https://*.twitchcdn.net",
+        "https://localhost:3000",
+      ],
       methods: ["GET", "POST"],
     },
   });
