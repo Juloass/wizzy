@@ -7,6 +7,7 @@ import type {
   QuestionStartedPayload,
   QuizEndedPayload,
   ScoreEntry,
+  Viewer,
   SocketEventDefinition,
   SocketDirection,
 } from "@wizzy/shared";
@@ -35,7 +36,9 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
   const [question, setQuestion] = useState<QuestionStartedPayload | null>(null);
   const [stats, setStats] = useState<[number, number][]>([]);
   const [scoreboard, setScoreboard] = useState<ScoreEntry[]>([]);
+  const [participants, setParticipants] = useState<Viewer[]>([]);
   const [remaining, setRemaining] = useState(0);
+  const [preCountdown, setPreCountdown] = useState(0);
   const [connectError, setConnectError] = useState(false);
   const duration = useRef(DEFAULT_QUESTION_DURATION);
   const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents>>();
@@ -48,6 +51,14 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
     }, 100);
     return () => clearInterval(id);
   }, [remaining]);
+
+  useEffect(() => {
+    if (preCountdown <= 0) return;
+    const id = setInterval(() => {
+      setPreCountdown((c) => (c > 0.1 ? Number((c - 0.1).toFixed(1)) : 0));
+    }, 100);
+    return () => clearInterval(id);
+  }, [preCountdown]);
 
   useEffect(() => {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
@@ -71,7 +82,18 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
       toast.error(`Disconnected: ${reason}`);
     });
 
+    socket.on("join", ({ player }: { player: Viewer }) => {
+      setParticipants((p) =>
+        p.find((v) => v.id === player.id) ? p : [...p, player]
+      );
+    });
+
+    socket.on("question_countdown", ({ duration }: { duration: number }) => {
+      setPreCountdown(duration);
+    });
+
     socket.on("question_started", (q: QuestionStartedPayload) => {
+      setPreCountdown(0);
       setQuestion(q);
       setStats([]);
       duration.current = q.remaining ?? DEFAULT_QUESTION_DURATION;
@@ -133,6 +155,23 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
         </div>
         <div className="space-y-2">
           <h1 className="text-xl font-bold">Live Controls</h1>
+          {preCountdown > 0 && !question && (
+            <div className="text-center text-2xl font-bold">
+              Starting in {preCountdown.toFixed(1)}s
+            </div>
+          )}
+          {!question && preCountdown <= 0 && participants.length > 0 && (
+            <div className="flex gap-2 flex-wrap">
+              {participants.map((p) => (
+                <div
+                  key={p.id}
+                  className="px-2 py-1 rounded bg-muted text-sm"
+                >
+                  {p.displayName}
+                </div>
+              ))}
+            </div>
+          )}
           {question && (
             <div className="space-y-2">
               <div className="text-lg font-semibold">{question.text}</div>
@@ -143,9 +182,18 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
                 />
               </div>
               <div className="text-right text-xs">{remaining.toFixed(1)}s</div>
-              <ul className="space-y-1">
+              <ul
+                className={`grid gap-2 grid-cols-${
+                  question.choices.length === 4 ? 2 : question.choices.length
+                }`}
+              >
                 {question.choices.map((c) => (
-                  <li key={c.index}>{c.index + 1}. {c.text}</li>
+                  <li
+                    key={c.index}
+                    className="border rounded p-2 text-center"
+                  >
+                    {c.text}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -158,8 +206,20 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
             </ul>
           )}
           <div className="space-x-2">
-            <Button type="button" onClick={startQuestion}>Start/Next</Button>
-            <Button type="button" onClick={reveal}>Reveal</Button>
+            <Button
+              type="button"
+              onClick={startQuestion}
+              disabled={question !== null || preCountdown > 0}
+            >
+              Start/Next
+            </Button>
+            <Button
+              type="button"
+              onClick={reveal}
+              disabled={!question || stats.length > 0}
+            >
+              Reveal
+            </Button>
             <Button type="button" onClick={endQuiz}>End</Button>
           </div>
         </div>

@@ -1,6 +1,13 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { io, type Socket } from "socket.io-client"
+import type {
+  SocketDirection,
+  SocketEventDefinition,
+} from "@wizzy/shared"
+import { toast } from "@/components/ui/sonner"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,16 +19,49 @@ import {
 } from "@/components/ui/select"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
+type EventsByDirection<D extends SocketDirection> = {
+  [K in keyof SocketEventDefinition as D extends SocketEventDefinition[K]["direction"]
+    ? K
+    : never]: (payload: SocketEventDefinition[K]["payload"]) => void;
+};
+
+type ServerToClientEvents = EventsByDirection<"server->viewer"> &
+  EventsByDirection<"server->web">;
+type ClientToServerEvents = EventsByDirection<"viewer->server"> &
+  EventsByDirection<"web->server">;
+
 interface Props {
   quizzes: { id: string; name: string }[]
+  accessToken: string
 }
 
-export default function StartQuizForm({ quizzes }: Props) {
+export default function StartQuizForm({ quizzes, accessToken }: Props) {
+  const router = useRouter()
   const [roomName, setRoomName] = useState("")
   const [quizId, setQuizId] = useState(quizzes[0]?.id ?? "")
   const [visibility, setVisibility] = useState<"open" | "followers" | "subs">(
     "open"
   )
+  const [creating, setCreating] = useState(false)
+
+  const startRoom = () => {
+    if (!quizId || creating) return
+    setCreating(true)
+    const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io("/", {
+      autoConnect: false,
+      auth: { role: "streamer", accessToken },
+    })
+    socket.on("connect_error", () => {
+      toast.error("Failed to connect to server")
+      setCreating(false)
+    })
+    socket.on("lobby_created", ({ lobbyId }: { lobbyId: string }) => {
+      socket.disconnect()
+      router.push(`/dashboard/live/${lobbyId}`)
+    })
+    socket.connect()
+    socket.emit("create_lobby", { quizId })
+  }
 
   return (
     <div className="space-y-4">
@@ -57,7 +97,13 @@ export default function StartQuizForm({ quizzes }: Props) {
         </ToggleGroup>
       </div>
       <div className="pt-4 flex justify-center">
-        <Button className="w-full max-w-xs">Start Quiz</Button>
+        <Button
+          className="w-full max-w-xs"
+          onClick={startRoom}
+          disabled={creating}
+        >
+          Start Quiz
+        </Button>
       </div>
     </div>
   )
