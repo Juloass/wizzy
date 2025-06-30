@@ -19,12 +19,7 @@ import { exportQuiz, importQuiz } from "@/lib/quizIO";
 import type { QuestionPayload, QuizPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Settings, Trash2, CheckCircle } from "lucide-react";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  type DropResult,
-} from "@hello-pangea/dnd";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Inter } from "next/font/google";
 import { useState, useEffect } from "react";
 
@@ -321,7 +316,17 @@ export default function QuizForm({
                 {questions.map((q, idx) => (
                   <Draggable draggableId={q.id} index={idx} key={q.id}>
                     {(dp) => (
-                      <div ref={dp.innerRef} {...dp.draggableProps} {...dp.dragHandleProps}>
+                      <div
+                        ref={dp.innerRef}
+                        {...dp.draggableProps}
+                        {...dp.dragHandleProps}
+                        className="flex items-center gap-1"
+                      >
+                        <div className="flex flex-col justify-center gap-1 cursor-grab p-1">
+                          <span className="w-[4px] h-[4px] bg-[#888] rounded-full"></span>
+                          <span className="w-[4px] h-[4px] bg-[#888] rounded-full"></span>
+                          <span className="w-[4px] h-[4px] bg-[#888] rounded-full"></span>
+                        </div>
                         <Button
                           variant="ghost"
                           onClick={() => setTab(q.id)}
@@ -334,7 +339,7 @@ export default function QuizForm({
                               : "bg-[#202026] text-[#C0C0C0] hover:bg-[#23232A]"
                           )}
                         >
-                          Question {idx + 1}
+                          {q.text}
                         </Button>
                       </div>
                     )}
@@ -431,7 +436,10 @@ export default function QuizForm({
                     value={q.text}
                     onChange={(e) => updateQuestionText(idx, e.target.value)}
                     placeholder="Question text"
-                    style={{ backgroundColor: "#202026", borderColor: "#2A2A33" }}
+                    style={{
+                      backgroundColor: "#202026",
+                      borderColor: "#2A2A33",
+                    }}
                     className="flex-1"
                   />
                   <Button
@@ -483,7 +491,8 @@ export default function QuizForm({
                       variant="ghost"
                       className={cn(
                         "text-[#C0C0C0] hover:text-white",
-                        q.correctChoice === cIdx && "text-green-500"
+                        q.correctChoice === cIdx &&
+                          "text-green-500 hover:text-green-500"
                       )}
                     >
                       <CheckCircle className="size-4" />
