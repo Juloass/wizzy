@@ -14,19 +14,67 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
 import { storeAudioBlob } from "@/lib/audio";
-import { storeImageBlob } from "@/lib/image";
+import { storeImageBlob, getImageBlob } from "@/lib/image";
 import { exportQuiz, importQuiz } from "@/lib/quizIO";
 import type { QuestionPayload, QuizPayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Settings, Trash2 } from "lucide-react";
 import { Inter } from "next/font/google";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
 interface QuestionForm extends QuestionPayload {
   audioEnabled?: boolean;
   imageEnabled?: boolean;
+}
+
+function ImageInputPreview({
+  imageKey,
+  onFile,
+}: {
+  imageKey: string | null;
+  onFile: (file: File | null) => void;
+}) {
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    let url: string | null = null;
+    if (imageKey) {
+      getImageBlob(imageKey).then((blob) => {
+        if (blob) {
+          url = URL.createObjectURL(blob);
+          setPreview(url);
+        } else {
+          setPreview(null);
+        }
+      });
+    } else {
+      setPreview(null);
+    }
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [imageKey]);
+
+  return (
+    <div className="flex items-center gap-2">
+      <FileInput
+        accept="image/*"
+        label={imageKey ? `Image: ${imageKey}` : "Question image"}
+        onFile={onFile}
+        className="w-1/2 bg-[#202026] border-[#2A2A33]"
+      />
+      {preview && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={preview}
+          alt="Preview"
+          className="h-24 w-1/2 max-w-[150px] rounded-md border border-[#2A2A33] object-contain"
+        />
+      )}
+    </div>
+  );
 }
 
 export default function QuizForm({
@@ -339,11 +387,9 @@ export default function QuizForm({
                   Attach Image
                 </label>
                 {imageEnabled && (
-                  <FileInput
-                    accept="image/*"
-                    label={q.imageKey ? `Image: ${q.imageKey}` : "Question image"}
+                  <ImageInputPreview
+                    imageKey={q.imageKey}
                     onFile={(f) => handleImage(idx, f)}
-                    className="bg-[#202026] border-[#2A2A33]"
                   />
                 )}
                 <label className="flex items-center gap-3 text-[#C0C0C0]">
