@@ -66,6 +66,10 @@ export type SocketEventDefinition = {
     direction: "web->server";
     payload: StartQuestionPayload;
   };
+  question_countdown: {
+    direction: "server->viewer" | "server->web";
+    payload: { duration: number };
+  };
   question_started: {
     direction: "server->viewer";
     payload: QuestionStartedPayload;
@@ -140,6 +144,9 @@ export interface LobbyFullPayload {
 
 export interface StartQuestionPayload {
   lobbyId: string;
+}
+export interface QuestionCountdownPayload {
+  duration: number;
 }
 export interface QuestionStartedPayload {
   id: string;
