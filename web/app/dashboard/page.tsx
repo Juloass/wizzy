@@ -41,7 +41,7 @@ export default async function DashboardPage() {
         </section>
         <section>
           <h2 className="text-xl font-bold tracking-tight mb-4">Create Room</h2>
-          <StartQuizForm quizzes={quizzes} />
+          <StartQuizForm quizzes={quizzes} accessToken={user.accessToken || ''} />
         </section>
       </div>
     </main>
