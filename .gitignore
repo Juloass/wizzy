@@ -24,6 +24,7 @@ lerna-debug.log*
 !.env.example
 
 # --- Prisma ---
+shared/src/prisma/query_engine*
 prisma/dev.db
 prisma/migrations/*/README.md
 prisma/generated/
