@@ -37,6 +37,7 @@ interface Props {
 
 export default function StartQuizForm({ quizzes, accessToken }: Props) {
   const router = useRouter()
+  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL
   const [roomName, setRoomName] = useState("")
   const [quizId, setQuizId] = useState(quizzes[0]?.id ?? "")
   const [visibility, setVisibility] = useState<"open" | "followers" | "subs">(
@@ -47,7 +48,7 @@ export default function StartQuizForm({ quizzes, accessToken }: Props) {
   const startRoom = () => {
     if (!quizId || creating) return
     setCreating(true)
-    const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io("/", {
+    const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(socketUrl || undefined, {
       autoConnect: false,
       auth: { role: "streamer", accessToken },
     })

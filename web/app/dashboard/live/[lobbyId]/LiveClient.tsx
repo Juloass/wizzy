@@ -42,6 +42,7 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
   const [connectError, setConnectError] = useState(false);
   const duration = useRef(DEFAULT_QUESTION_DURATION);
   const socketRef = useRef<Socket<ServerToClientEvents, ClientToServerEvents>>();
+  const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL;
 
   // handle countdown
   useEffect(() => {
@@ -62,7 +63,7 @@ export default function LiveClient({ lobbyId, accessToken }: Props) {
 
   useEffect(() => {
     const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(
-      "/",
+      socketUrl || undefined,
       {
         autoConnect: false,
         auth: { role: "streamer", accessToken },
