@@ -3,6 +3,9 @@ import { getCurrentUser } from '@/lib/auth'
 import Link from 'next/link'
 import ErrorScreen from '@/components/error-screen'
 import { tryWithError } from '@/lib/try-with-error'
+import StartQuizForm from '@/components/start-quiz-form'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 export default async function DashboardPage() {
   const [user, userError] = await tryWithError(() => getCurrentUser())
@@ -15,16 +18,32 @@ export default async function DashboardPage() {
   if (quizError) return <ErrorScreen title="Database Unreachable" />
 
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Your Quizzes</h1>
-      <Link className="underline" href="/dashboard/quiz/new">Create New Quiz</Link>
-      <ul className="mt-4 space-y-2">
-        {quizzes.map((q) => (
-          <li key={q.id}>
-            <Link className="text-purple-600 underline" href={`/dashboard/quiz/${q.id}`}>{q.name}</Link>
-          </li>
-        ))}
-      </ul>
+    <main className="p-8 mx-auto max-w-4xl">
+      <div className="grid gap-8 md:grid-cols-2">
+        <section>
+          <h1 className="text-xl font-bold tracking-tight mb-4">Your Quizzes</h1>
+          <Button asChild className="mb-4">
+            <Link href="/dashboard/quiz/new">Create New Quiz</Link>
+          </Button>
+          <ul className="space-y-3">
+            {quizzes.map((q) => (
+              <li key={q.id}>
+                <Card className="hover:bg-muted/50 transition-colors">
+                  <CardContent className="p-4">
+                    <Link href={`/dashboard/quiz/${q.id}`} className="font-medium">
+                      {q.name}
+                    </Link>
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section>
+          <h2 className="text-xl font-bold tracking-tight mb-4">Create Room</h2>
+          <StartQuizForm quizzes={quizzes} />
+        </section>
+      </div>
     </main>
   );
 }
